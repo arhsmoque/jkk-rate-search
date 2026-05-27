@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#003366">
+  <meta name="description" content="Search JKR Jadual Kadar Kerja rates across Civil, Electrical and Pukal schedules.">
+  <!-- CSP: allow sql.js CDN, WASM, inline styles -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>JKK Rate Search</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23003366'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3E🔍%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>JKK Rate Search</h1>
+      <p>JKR Jadual Kadar Kerja — Civil · Electrical · Pukal</p>
+    </header>
+
+    <div class="search-wrap">
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Search e.g. scaffold, konkrit, paip…"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+      <span class="icon">🔍</span>
+    </div>
+
+    <div id="status-bar" class="status-bar">
+      <span class="spinner"></span>
+      <span id="status-text">Loading…</span>
+    </div>
+
+    <ul id="results-list" class="results-list" role="list"></ul>
+    <div id="detail-panel"></div>
+
+    <footer class="footer">
+      Offline-ready • Data: JKR 2023 / Pukal • Press / to search
+    </footer>
+  </div>
+
+  <script src="vendor/sql-wasm.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(console.error);
+    }
+  </script>
+</body>
+</html>

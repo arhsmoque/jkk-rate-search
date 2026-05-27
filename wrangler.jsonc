@@ -1,0 +1,12 @@
+{
+  // Cloudflare Pages deployment config
+  // Connect this repo to Cloudflare Pages for auto-deploy on push
+  "name": "jkk-rate-search",
+  "compatibility_date": "2026-05-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "."
+  }
+}

@@ -1,0 +1,63 @@
+name: jkk-rate-search
+display_name: JKK Rate Search PWA
+protocol: aodp-v1.7
+conformance_level: 1
+conformance_name: operable
+risk_class: external_mutation
+risk_modifiers:
+  - local_mutation   # IndexedDB cache, service worker
+  - network_access   # Initial DB download, sql.js WASM
+
+components:
+  - path: index.html
+    role: base
+    risk: read_only
+    description: Customer-facing search PWA
+
+  - path: app.js
+    role: base
+    risk: local_mutation
+    description: Core logic, search engine, IndexedDB persistence
+
+  - path: styles.css
+    role: base
+    risk: read_only
+    description: Mobile-first stylesheet
+
+  - path: wrangler.jsonc
+    role: adapter
+    risk: local_mutation
+    description: Cloudflare Pages deployment config
+
+  - path: service-worker.js
+    role: adapter
+    risk: local_mutation
+    description: Offline shell caching
+
+  - path: manifest.webmanifest
+    role: adapter
+    risk: read_only
+    description: PWA install manifest
+
+  - path: assets/jkk-master.db
+    role: data
+    risk: read_only
+    description: Generated SQLite database with FTS5
+
+dependencies:
+  - name: sql.js
+    type: external_library
+    access: vendored in vendor/ (sql-wasm.js + sql-wasm.wasm)
+    provenance: sql.js.org
+    license: MIT
+    update_policy: manual vendor update
+
+  - name: cloudflare-pages
+    type: infrastructure
+    access: static file serving via wrangler.jsonc
+    provenance: cloudflare.com
+    license: proprietary
+
+smoke_test: "Open index.html in browser; search 'konkrit' returns results; tap result shows rate detail"
+deploy_command: "git push origin main"
+agents_doc: AGENTS.md
