@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#003366">
   <meta name="description" content="Search JKR Jadual Kadar Kerja rates across Civil, Electrical and Pukal schedules.">
   <!-- CSP: allow sql.js CDN, WASM, inline styles -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
   <title>JKK Rate Search</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.webmanifest">
@@ -23,6 +23,7 @@
       <input
         id="search-input"
         type="text"
+        aria-label="Search JKK rates"
         placeholder="Search e.g. scaffold, konkrit, paip…"
         autocomplete="off"
         autocapitalize="off"

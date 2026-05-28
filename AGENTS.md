@@ -50,12 +50,14 @@ Zero-build static PWA. SQLite database (with FTS5) runs in-browser via sql.js WA
 
 The SQL queries live in the `SearchPort` and `build_search_query` functions. If the schema changes (e.g. adding a new column), update both the extractor (`build-jkk-database.py`) AND the query builder in `app.js`.
 
-### 2. CSP must allow vendored sql.js
+### 2. CSP must include `'wasm-unsafe-eval'` for sql.js WASM
 
-Current CSP in `index.html`:
+Current CSP in `index.html` **and** `_headers` (both must stay in sync):
 ```
-default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;
+default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;
 ```
+
+`'wasm-unsafe-eval'` is **required** — `initSqlJs()` calls `new WebAssembly.Instance()` which the browser blocks without this directive. Removing it causes a silent CSP violation and the app shows "Failed to load database."
 
 If moving sql.js back to a CDN, add the CDN origin to both `script-src` and `connect-src`.
 
@@ -87,17 +89,33 @@ To verify the app works after a change:
 4. Tap a result — detail panel should show rates
 5. Check DevTools console for errors
 
-**Deploy (Cloudflare Pages):**
-```bash
-git add .
-git commit -m "<change description>"
+**Deploy (Cloudflare Pages — authoritative):**
+```powershell
+# From D:\00_ARH\.ARH-Cloned-Github-Repo\jkk-rate-search
+git add <files>
+git commit -m "<component>: <what changed>"
 git push origin main
+python deploy-cf-pages.py
 ```
 
-Cloudflare Pages auto-deploys on push to `main`.
+`deploy-cf-pages.py` reads the Cloudflare API token from the ARH vault and calls `wrangler pages deploy .` with the correct cwd. **Always run from the repo directory** — `.assetsignore` only applies within the repo directory and wrangler calculates file sizes relative to cwd.
+
+The wrangler.jsonc has a `pages_build_output_dir: "."` setting but **CF Pages git integration is not confirmed to be active**. Do not rely on `git push` alone to trigger a deploy — run `deploy-cf-pages.py` explicitly after pushing.
 
 **Deploy (GitHub Pages fallback):**
 Push `webapp/` contents to `gh-pages` branch or enable Pages on `main` root.
+
+---
+
+## Failure modes
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| "Failed to load database. Refresh to retry." | CSP blocks WASM compilation | Verify `script-src 'self' 'wasm-unsafe-eval'` in both `index.html` and `_headers` |
+| `deploy-cf-pages.py` exits with auth error 9106 | Cloudflare API token expired or wrong scope | Re-generate at https://dash.cloudflare.com/profile/api-tokens (needs Cloudflare Pages:Edit + Account:Read), update vault key `cloudflare_api_token` |
+| `deploy-cf-pages.py` reports "project not found" | CF Pages project was deleted or name changed | Create project: `wrangler pages project create jkk-rate-search` from repo directory |
+| Cloudflare Pages unavailable entirely | CF outage | Deploy to GitHub Pages fallback: push to `main`, enable Pages in repo settings → root of `main` |
+| DB rebuild scripts not found | `260527-08_web_kimi_jkk-rate-search-pwa` folder missing from `_agent-output` | Scripts are at `D:\00_ARH\_agent-output\260527-08_web_kimi_jkk-rate-search-pwa\scripts\`. If folder is gone, re-extract from git history or request rebuild from the generating agent. |
 
 ---
 

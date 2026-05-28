@@ -1,3 +1,4 @@
 .git
 .wrangler
 .github
+deploy-cf-pages.py

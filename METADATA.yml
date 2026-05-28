@@ -1,8 +1,10 @@
 name: jkk-rate-search
 display_name: JKK Rate Search PWA
+version: "1.0.0"
 protocol: aodp-v1.7
 conformance_level: 1
 conformance_name: operable
+deployment_target: cloudflare-pages
 risk_class: external_mutation
 risk_modifiers:
   - local_mutation   # IndexedDB cache, service worker
@@ -59,5 +61,12 @@ dependencies:
     license: proprietary
 
 smoke_test: "Open index.html in browser; search 'konkrit' returns results; tap result shows rate detail"
-deploy_command: "git push origin main"
+deploy_command: "python deploy-cf-pages.py"
 agents_doc: AGENTS.md
+
+performance:
+  first_load_budget_kb: 1750
+  note: "sql-wasm.wasm (~620KB) + jkk-master.db (~1MB) + shell (~20KB)"
+
+accessibility:
+  target: WCAG 2.1 AA
