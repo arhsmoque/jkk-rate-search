@@ -1,4 +1,4 @@
-const CACHE_NAME = "jkk-rate-search-v1";
+const CACHE_NAME = "jkk-rate-search-v2";
 const APP_SHELL = [
   "./",
   "./index.html",

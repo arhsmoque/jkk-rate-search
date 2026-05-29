@@ -24,7 +24,7 @@ function normalize_search_input(raw_query) {
  * Build the FTS5 search SQL and parameters.
  * @param {string} normalized_query
  * @param {number} limit
- * @returns {{sql: string, params: string[]}}
+ * @returns {{sql: string, params: Array<string|number>}}
  */
 function build_search_query(normalized_query, limit = 20) {
   const sql = `
@@ -45,7 +45,7 @@ function build_search_query(normalized_query, limit = 20) {
     ORDER BY rank
     LIMIT ?
   `;
-  return { sql, params: [normalized_query, String(limit)] };
+  return { sql, params: [normalized_query, limit] };
 }
 
 /**
