@@ -26,7 +26,7 @@ pwsh -File scripts/validate-deployment.ps1
 
 ## Architecture in one paragraph
 
-Zero-build static PWA. SQLite database (with FTS5) runs in-browser via sql.js WASM. Data is cached in IndexedDB after first download. The deployable site lives in `public/`, served as an assets-only Cloudflare Worker (Workers Static Assets). No backend, no API keys, no Firebase.
+Zero-build static PWA. SQLite database is read in-browser via sql.js (WASM) and cached in IndexedDB after first download. **Search runs in-memory** (prefix match, with a Levenshtein fuzzy fallback) over the ~2.4k-row index — the vendored sql.js build has **no FTS5 module**, so the DB's `fts5` table is unused and `MATCH` must never be called. The deployable site lives in `public/`, served as an assets-only Cloudflare Worker (Workers Static Assets). No backend, no API keys, no Firebase.
 
 ---
 
@@ -50,7 +50,7 @@ All served files live under `public/` (= site root). Tooling/docs stay at repo r
 
 ### 1. `app.js` must not hardcode DB schema
 
-The SQL queries live in the `SearchPort` and `build_search_query` functions. If the schema changes (e.g. adding a new column), update both the extractor (`build-jkk-database.py`) AND the query builder in `app.js`.
+Item/rate reads use plain `SELECT`s in `load_all_items` and `SearchPort.get_item_detail`. Search itself is in-memory (`prefix_search` / `fuzzy_search`) over the rows returned by `load_all_items`. If the schema changes (e.g. adding a new column), update both the extractor (`build-jkk-database.py`) AND `load_all_items` in `app.js`.
 
 ### 2. CSP must include `'wasm-unsafe-eval'` for sql.js WASM
 
@@ -71,12 +71,16 @@ The service worker caches:
 
 The DB file (`assets/jkk-master.db`) is NOT cached by the service worker. It is cached by the app logic in IndexedDB. This avoids service worker cache invalidation issues when the DB updates.
 
-### 4. FTS5 prefix matching
+### 4. In-memory prefix + fuzzy search (NOT FTS5)
 
-Search uses SQLite FTS5 with `prefix='2 3 4'` and word-level `*` suffixes. This means:
-- `konkrit` matches `konkrit`, `konkrits`, `konkritting`
-- It does NOT match typos like `konkrete` or `concrete`
-- For typo tolerance, a future version needs trigram indexing or client-side fallback
+Search is pure JS over the cached `allItems` index — **do not reintroduce `MATCH`**
+(the vendored sql.js has no fts5 module; `MATCH` throws "no such module: fts5").
+- `prefix_search`: every query token must prefix some item token (AND semantics).
+  `konkrit` matches `konkrit`, `konkrits`; `scaffold` matches `scaffolding`.
+- `fuzzy_search`: runs only when prefix search returns 0 rows. Bounded Levenshtein
+  per token (floor `minSim`), so `konkret`→`konkrit`, `scafold`→`scaffold`.
+- If you ever need server-side FTS again, ship an sql.js build compiled with
+  `-DSQLITE_ENABLE_FTS5` and re-test, or rebuild the DB with an fts4 table.
 
 ---
 

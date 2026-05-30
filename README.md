@@ -7,7 +7,8 @@ A cross-platform, offline-capable PWA for searching JKR Jadual Kadar Kerja (JKK)
 ## What it does
 
 - Search across **Civil & Building**, **Electrical**, and **Pukal** rate tables
-- Instant prefix search via SQLite FTS5 (e.g. `scaffold*` reveals scaffolding items)
+- Instant in-memory prefix search (e.g. `scaffold` reveals scaffolding items)
+- **Typo-tolerant fuzzy fallback** — `konkret`/`scafold` still find `konkrit`/`scaffold`
 - Works offline after first load — database cached in browser IndexedDB
 - No backend, no API keys, no install friction — just a URL
 
@@ -24,7 +25,9 @@ Civil tables include multi-rate rows (e.g. Concrete Gred 15/20/25/30/35/40).
 ## Tech stack
 
 - **Frontend:** Vanilla HTML/JS/CSS, no framework, no build step
-- **Database:** SQLite with FTS5, running in-browser via sql.js (WASM)
+- **Database:** SQLite read in-browser via sql.js (WASM); search runs in-memory
+  (prefix + Levenshtein fuzzy fallback). The vendored sql.js build has no FTS5
+  module, so matching is done in JS over the ~2.4k-row index, not via `MATCH`.
 - **Persistence:** IndexedDB snapshot pattern
 - **Hosting:** Cloudflare Workers Static Assets (assets-only Worker, auto-deploy on push)
 
@@ -101,7 +104,8 @@ python deploy-cf-pages.py   # runs `wrangler deploy`
 - First load requires internet to download the DB and sql.js WASM
 - Subsequent loads work fully offline
 - Private browsing may block IndexedDB; the app will re-download each session
-- FTS5 uses prefix matching (`scaffold*`), not typo-tolerant fuzzy search
+- Search is prefix-first (`scaffold` matches `scaffolding`); on an exact miss it
+  falls back to fuzzy matching (bounded Levenshtein) for typo tolerance
 
 ## License
 
