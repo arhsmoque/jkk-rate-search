@@ -28,6 +28,7 @@
 .PARAMETER FsCode        New value for --fs-code      (e.g. "0.9rem")
 .PARAMETER FsTiny        New value for --fs-tiny      (e.g. "0.75rem")
 .PARAMETER FsMicro       New value for --fs-micro     (e.g. "0.7rem")
+.PARAMETER Json          Emit a single-line JSON result instead of coloured host output
 #>
 param(
     [string]$Accent,
@@ -46,7 +47,8 @@ param(
     [string]$FsMeta,
     [string]$FsCode,
     [string]$FsTiny,
-    [string]$FsMicro
+    [string]$FsMicro,
+    [switch]$Json
 )
 
 $cssPath = Join-Path (Split-Path $PSScriptRoot -Parent) "public\styles.css"
@@ -92,9 +94,15 @@ foreach ($varName in $patches.Keys) {
 }
 
 if ($changed.Count -eq 0) {
-    Write-Host "No changes made." -ForegroundColor Yellow
+    if ($Json) { [pscustomobject]@{ status = 'ok'; changed = @(); count = 0 } | ConvertTo-Json -Compress }
+    else        { Write-Host "No changes made." -ForegroundColor Yellow }
     exit 0
 }
 
 Set-Content $cssPath $content -NoNewline -Encoding utf8
-Write-Host "patch-theme: updated $($changed.Count) variable(s): $($changed -join ', ')" -ForegroundColor Green
+
+if ($Json) {
+    [pscustomobject]@{ status = 'ok'; changed = @($changed); count = $changed.Count } | ConvertTo-Json -Compress
+} else {
+    Write-Host "patch-theme: updated $($changed.Count) variable(s): $($changed -join ', ')" -ForegroundColor Green
+}

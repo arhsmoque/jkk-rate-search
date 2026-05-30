@@ -26,26 +26,74 @@ pwsh -File scripts/validate-deployment.ps1
 
 ## Edit map — go here first
 
-Agents: edit source files directly. The `scripts/patch-*.ps1` files are for humans running one-off CLI patches — skip them.
+**Agent workflow: decide what to change → call the matching patch script → done.**
+Scripts handle all file I/O. Pass `-Json` to get machine-readable output.
+Only touch source files directly for changes not covered by a script (rate table columns, IndexedDB key, PWA manifest, wrangler config).
 
-| Want to change | File | Locator |
+### `scripts/patch-ui-text.ps1` — text and PDF links
+
+```powershell
+# Update all three PDF download card links (most common task)
+pwsh -File scripts/patch-ui-text.ps1 `
+    -CivilHref      "https://drive.google.com/file/d/FILEID/view" `
+    -ElectricalHref "https://drive.google.com/file/d/FILEID/view" `
+    -PukalHref      "https://drive.google.com/file/d/FILEID/view" `
+    -Json
+```
+
+| Parameter | What it patches |
+|---|---|
+| `-CivilHref` | `href=` on the Civil download card |
+| `-ElectricalHref` | `href=` on the Elektrik download card |
+| `-PukalHref` | `href=` on the Pukal download card |
+| `-PageTitle` | `<title>` tag (browser tab / PWA name) |
+| `-MetaDescription` | `<meta name="description" content="...">` |
+| `-Title` | `<h1>` heading |
+| `-Subtitle` | Subtitle `<p>` under `<h1>` |
+| `-Placeholder` | Search input `placeholder=` |
+| `-DownloadsNote` | `<p class="downloads-note">` caption |
+| `-Footer` | `<footer>` text |
+
+### `scripts/patch-theme.ps1` — colours and typography
+
+```powershell
+# Change brand colour
+pwsh -File scripts/patch-theme.ps1 -Accent "#1a56db" -Json
+```
+
+Key parameters: `-Accent`, `-AccentLight`, `-Bg`, `-Surface`, `-Success`, `-Muted`, `-Border`, `-ChipBg`, `-ChipText`, `-FontFamily`, `-FsTitle`, `-FsBody`, `-FsItem`, `-FsMeta`, `-FsCode`, `-FsTiny`, `-FsMicro`
+
+### `scripts/patch-search-settings.ps1` — search behaviour (app.js CONFIG block)
+
+```powershell
+# Raise result limit, tighten debounce
+pwsh -File scripts/patch-search-settings.ps1 -SearchLimit 30 -Debounce 100 -Json
+```
+
+| Parameter | What it patches | Default |
 |---|---|---|
-| PDF download links (Civil / Elektrik / Pukal) | `public/index.html` | `<a class="download-card" data-doc="civil\|electrical\|pukal">` — edit `href=` |
-| Page title (browser tab) | `public/index.html:11` | `<title>` tag |
-| Header / subtitle text | `public/index.html:23-25` | `.header-brand` div — `<h1>` and `<p>` |
-| Search placeholder | `public/index.html:55` | `placeholder="..."` on `#search-input` |
-| Footer text | `public/index.html:130` | `<footer class="footer">` |
-| Downloads note text | `public/index.html:126` | `<p class="downloads-note">` |
-| Search result limit | `public/app.js` | `CONFIG.SEARCH_LIMIT` (default 20) |
-| Fuzzy match tolerance | `public/app.js` | `CONFIG.FUZZY_MIN_SIM` (0.0–1.0; lower = more lenient) |
-| Search debounce delay | `public/app.js` | `CONFIG.SEARCH_DEBOUNCE_MS` (default 150) |
-| Force IndexedDB cache refresh | `public/app.js` | `IndexedDbStorageAdapter.KEY` — increment version suffix |
-| Rate table columns | `public/app.js` | `RATE_TABLE_COLS` array — between the `// ── App: RATE_TABLE_COLS` and `// END RATE_TABLE_COLS` markers |
-| Brand / accent colour | `public/styles.css:7` | `--accent:` in `:root` block |
-| Dark mode colours | `public/styles.css:52` | `html.dark { ... }` block |
-| PWA app name | `public/manifest.webmanifest` | `name` and `short_name` fields |
-| CF Worker name / compat date | `wrangler.jsonc` | `name` and `compatibility_date` |
-| DB file path served to browser | `public/app.js` | `CONFIG.DB_PATH` (default `"assets/jkk-master.db"`) |
+| `-SearchLimit` | Max results returned | `20` |
+| `-FuzzyMinSim` | Fuzzy match threshold 0.0–1.0 (lower = more lenient) | `0.6` |
+| `-Debounce` | Search input debounce in ms | `150` |
+| `-Locale` | Currency format locale | `"en-MY"` |
+| `-DbPath` | DB asset path served to browser | `"assets/jkk-master.db"` |
+
+### Script output contract (`-Json`)
+
+```json
+{ "status": "ok",    "changed": ["civil-href", "pukal-href"], "count": 2 }
+{ "status": "ok",    "changed": [],                           "count": 0 }
+{ "status": "error", "message": "File not found: ..." }
+```
+
+### Direct source edits (no script)
+
+| What | Where |
+|---|---|
+| Rate table columns (add/remove/reorder) | `public/app.js` → `RATE_TABLE_COLS` array between `// ── App: RATE_TABLE_COLS` and `// END RATE_TABLE_COLS` |
+| Force IndexedDB cache refresh | `public/app.js` → `IndexedDbStorageAdapter.KEY` — increment version suffix |
+| PWA app name / icons | `public/manifest.webmanifest` |
+| CF Worker name / compatibility date | `wrangler.jsonc` |
 
 ---
 

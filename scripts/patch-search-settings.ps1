@@ -16,13 +16,15 @@
 .PARAMETER Debounce      SEARCH_DEBOUNCE_MS integer (e.g. 200)
 .PARAMETER Locale        LOCALE string              (e.g. "ms-MY")
 .PARAMETER DbPath        DB_PATH string             (e.g. "assets/jkk-v2.db")
+.PARAMETER Json          Emit a single-line JSON result instead of coloured host output
 #>
 param(
     [Nullable[int]]    $SearchLimit,
     [Nullable[double]] $FuzzyMinSim,
     [Nullable[int]]    $Debounce,
     [string]           $Locale,
-    [string]           $DbPath
+    [string]           $DbPath,
+    [switch]           $Json
 )
 
 $jsPath = Join-Path (Split-Path $PSScriptRoot -Parent) "public\app.js"
@@ -82,9 +84,15 @@ if (-not [string]::IsNullOrWhiteSpace($DbPath)) {
 }
 
 if ($changed.Count -eq 0) {
-    Write-Host "No changes made." -ForegroundColor Yellow
+    if ($Json) { [pscustomobject]@{ status = 'ok'; changed = @(); count = 0 } | ConvertTo-Json -Compress }
+    else        { Write-Host "No changes made." -ForegroundColor Yellow }
     exit 0
 }
 
 Set-Content $jsPath $content -NoNewline -Encoding utf8
-Write-Host "patch-config: updated $($changed.Count) key(s): $($changed -join ', ')" -ForegroundColor Green
+
+if ($Json) {
+    [pscustomobject]@{ status = 'ok'; changed = @($changed); count = $changed.Count } | ConvertTo-Json -Compress
+} else {
+    Write-Host "patch-search-settings: updated $($changed.Count) key(s): $($changed -join ', ')" -ForegroundColor Green
+}
