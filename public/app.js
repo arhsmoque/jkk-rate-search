@@ -20,6 +20,7 @@ function format_search_result_row(row) {
     edition_year: row.edition_year || 0,
     source_page: row.source_page || 0,
     rate_count: row.rate_count || 0,
+    variant_labels: row.variant_labels || "",
   };
 }
 
@@ -182,7 +183,8 @@ function prefix_search(items, rawQuery, limit = 20) {
 function load_all_items(db) {
   const sql = `
     SELECT i.id, i.item_no, i.description, i.unit, i.doc_type,
-           i.edition_year, i.source_page, COUNT(r.id) AS rate_count
+           i.edition_year, i.source_page, COUNT(r.id) AS rate_count,
+           GROUP_CONCAT(r.variant_label, '|') AS variant_labels
     FROM jkk_items i
     LEFT JOIN jkk_rates r ON r.item_id = i.id
     GROUP BY i.id
@@ -202,8 +204,11 @@ function load_all_items(db) {
       edition_year: v[idx.edition_year] || 0,
       source_page: v[idx.source_page] || 0,
       rate_count: v[idx.rate_count] || 0,
+      variant_labels: v[idx.variant_labels] || "",
     };
-    row._tokens = fuzzy_tokenize(`${row.item_no} ${row.description} ${row.unit}`);
+    row._tokens = fuzzy_tokenize(
+      `${row.item_no} ${row.description} ${row.unit} ${row.variant_labels.replace(/\|/g, " ")}`
+    );
     return row;
   });
 }
@@ -239,7 +244,7 @@ const SearchPort = {
     item_stmt.free();
 
     const rates_stmt = db.prepare(
-      "SELECT variant_label, rate_rm FROM jkk_rates WHERE item_id = ? ORDER BY id"
+      "SELECT variant_label, variant_type, rate_rm FROM jkk_rates WHERE item_id = ? ORDER BY id"
     );
     rates_stmt.bind([String(item_id)]);
     const rates = [];
@@ -338,11 +343,11 @@ let sqlDb = null;
 let allItems = [];
 let searchDebounceTimer = null;
 let currentDetailId = null;
+let currentDetailEl = null;
 
 const els = {
   searchInput: document.getElementById("search-input"),
   resultsList: document.getElementById("results-list"),
-  detailPanel: document.getElementById("detail-panel"),
   statusBar: document.getElementById("status-bar"),
   statusText: document.getElementById("status-text"),
 };
@@ -399,12 +404,20 @@ async function init_database() {
   set_status(`Ready — ${allItems.length.toLocaleString()} items indexed.`);
 }
 
+function close_inline_detail() {
+  if (currentDetailEl) { currentDetailEl.remove(); currentDetailEl = null; }
+  if (currentDetailId !== null) {
+    const active = els.resultsList.querySelector(".result-item.active");
+    if (active) active.classList.remove("active");
+  }
+  currentDetailId = null;
+}
+
 async function do_search(query) {
   if (!sqlDb) return;
   if (!query || query.trim().length === 0) {
+    close_inline_detail();
     els.resultsList.innerHTML = "";
-    els.detailPanel.innerHTML = "";
-    currentDetailId = null;
     return;
   }
 
@@ -434,9 +447,8 @@ async function do_search(query) {
 }
 
 function render_results(results) {
+  close_inline_detail();
   els.resultsList.innerHTML = "";
-  els.detailPanel.innerHTML = "";
-  currentDetailId = null;
 
   if (results.length === 0) {
     els.resultsList.innerHTML = `<li class="empty-state">No items found. Try another keyword.</li>`;
@@ -450,13 +462,17 @@ function render_results(results) {
     li.setAttribute("tabindex", "0");
     li.dataset.id = r.id;
 
-    const rateLabel = r.rate_count > 1 ? `${r.rate_count} rates` : (r.rate_count === 1 ? "1 rate" : "");
+    const rateLabel = r.rate_count > 1 ? `${r.rate_count} kadar` : (r.rate_count === 1 ? "1 kadar" : "");
+    const variantPills = r.variant_labels
+      ? r.variant_labels.split("|").filter(Boolean)
+      : [];
 
     li.innerHTML = `
       <div class="row-top">
         <span class="code">${escape_html(r.item_no)}</span>
         <span class="desc">${escape_html(r.description)}</span>
       </div>
+      ${variantPills.length ? `<div class="variant-pills">${variantPills.map(v => `<span class="vpill">${escape_html(v)}</span>`).join("")}</div>` : ""}
       <div class="meta">
         ${r.unit ? `<span>${escape_html(r.unit)}</span>` : ""}
         ${rateLabel ? `<span>• ${rateLabel}</span>` : ""}
@@ -464,69 +480,96 @@ function render_results(results) {
       </div>
     `;
 
-    li.addEventListener("click", () => show_detail(r.id));
+    li.addEventListener("click", () => show_detail(r.id, li));
     li.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") show_detail(r.id);
+      if (e.key === "Enter" || e.key === " ") show_detail(r.id, li);
     });
     els.resultsList.appendChild(li);
   }
 }
 
-async function show_detail(item_id) {
+async function show_detail(item_id, targetLi) {
   if (!sqlDb) return;
+  // Toggle: clicking the same row closes it
+  if (currentDetailId === item_id) {
+    close_inline_detail();
+    return;
+  }
+  close_inline_detail();
   currentDetailId = item_id;
-  set_status("Loading detail…", true);
+  targetLi.classList.add("active");
+  set_status("Memuatkan…", true);
   try {
     const { item, rates } = await SearchPort.get_item_detail(sqlDb, item_id);
-    if (!item) {
-      set_status("Item not found.");
-      return;
-    }
-    render_detail(item, rates);
-    set_status("Detail loaded.");
+    if (!item) { set_status("Item tidak dijumpai."); return; }
+    render_detail(item, rates, targetLi);
+    set_status("Siap.");
   } catch (e) {
     console.error("Detail error:", e);
-    set_status("Failed to load detail.");
+    set_status("Gagal memuatkan butiran.");
   }
 }
 
-function render_detail(item, rates) {
+function render_detail(item, rates, targetLi) {
+  const unitLabel = item.unit ? escape_html(item.unit) : "";
+  const rateColHeader = unitLabel ? `Kadar (RM / ${unitLabel})` : "Kadar (RM)";
+
   const ratesHtml = rates.length
     ? `<table class="rates-table">
-        <thead><tr><th>Variant</th><th>Rate</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Varian</th>
+            <th>Jenis</th>
+            <th>${rateColHeader}</th>
+          </tr>
+        </thead>
         <tbody>
           ${rates.map(r => `
             <tr>
               <td>${escape_html(r.variant_label)}</td>
+              <td>${r.variant_type ? `<span class="variant-type-badge">${escape_html(r.variant_type)}</span>` : "<span class=\"muted-dash\">—</span>"}</td>
               <td>${format_currency(r.rate_rm)}</td>
             </tr>
           `).join("")}
         </tbody>
       </table>`
-    : `<p style="color:var(--muted);font-size:0.85rem;">No rate data available.</p>`;
+    : `<p style="color:var(--muted);font-size:0.85rem;">Tiada data kadar.</p>`;
 
-  els.detailPanel.innerHTML = `
+  const sectionHtml = item.section
+    ? `<div class="detail-section">${escape_html(item.section)}</div>`
+    : "";
+  const remarksHtml = item.remarks
+    ? `<div class="detail-remarks"><strong>Nota:</strong> ${escape_html(item.remarks)}</div>`
+    : "";
+
+  const detailEl = document.createElement("li");
+  detailEl.className = "detail-inline";
+  detailEl.innerHTML = `
     <div class="detail-header">
       <div>
         <div class="detail-code">${escape_html(item.item_no || "—")}</div>
         <div class="detail-meta">
           ${escape_html(doc_label(item.doc_type, item.edition_year))}
-          ${item.source_page ? `• Page ${item.source_page}` : ""}
-          ${item.unit ? `• Unit: ${escape_html(item.unit)}` : ""}
+          ${item.source_page ? `• Muka surat ${item.source_page}` : ""}
+          ${unitLabel ? `• Unit: ${unitLabel}` : ""}
         </div>
       </div>
-      <button class="close-btn" aria-label="Close detail">&times;</button>
+      <button class="close-btn" aria-label="Tutup butiran">&times;</button>
     </div>
+    ${sectionHtml}
     <div class="detail-desc">${escape_html(item.description)}</div>
+    ${remarksHtml}
     ${ratesHtml}
   `;
 
-  els.detailPanel.querySelector(".close-btn").addEventListener("click", () => {
-    els.detailPanel.innerHTML = "";
-    currentDetailId = null;
+  targetLi.insertAdjacentElement("afterend", detailEl);
+  currentDetailEl = detailEl;
+
+  detailEl.querySelector(".close-btn").addEventListener("click", () => {
+    close_inline_detail();
   });
 
-  els.detailPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function escape_html(str) {
