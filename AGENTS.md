@@ -244,6 +244,28 @@ When new JKK PDFs are released:
 
 ---
 
+## Documentation policy
+
+Working docs (`AGENTS.md`, `README.md`, script `.SYNOPSIS` blocks) reflect **current state only**.
+No temporal annotations: no "(updated)", "(new)", "(was X)", "(added in session Y)", no version suffixes on section headings.
+If something changed, update the line. History is in `git log` and `journal.md`.
+
+**Where to record changes:**
+
+| Type | Where |
+|---|---|
+| Architectural decision, rejected approach, user intent, "why not X" | `journal.md` — narrative, quoted context, reasoning |
+| Routine edit (link update, colour tweak, config change, script call) | `changes.jsonl` — one JSON line per change |
+
+**`changes.jsonl` format** (append one line per agent action, never rewrite existing lines):
+```json
+{"date":"YYYY-MM-DD","agent":"<model>","action":"<verb>","target":"<file or param>","note":"<one line>"}
+```
+
+Pipe patch script `-Json` output into it or write the line manually before committing.
+
+---
+
 ## Commit and push policy
 
 Agents commit and push automatically after completing a change set.

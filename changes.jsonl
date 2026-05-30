@@ -1,0 +1,9 @@
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"patch-href","target":"index.html:civil-href","note":"Set Civil PDF link to Google Drive 1eeD9Ptg... (JKK Awam 2023, Construction Professionals Malaysia)"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"patch-href","target":"index.html:electrical-href","note":"Set Electrical PDF link to Google Drive 18S6gpNR... (JKK Elektrik 2023)"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"patch-href","target":"index.html:pukal-href","note":"Set Pukal PDF link to Google Drive 12skCTyZ... (JKK Kerja Pukal, undated)"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"patch-text","target":"index.html:downloads-note","note":"Updated caption from stale pending message to live source attribution"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"extend-script","target":"scripts/patch-ui-text.ps1","note":"Added -CivilHref, -ElectricalHref, -PukalHref, -PageTitle, -MetaDescription, -DownloadsNote, -Json params"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"extend-script","target":"scripts/patch-theme.ps1","note":"Added -Json flag with shared output contract"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"extend-script","target":"scripts/patch-search-settings.ps1","note":"Added -Json flag with shared output contract"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"create","target":"journal.md","note":"Created living decision record; no journal existed previously"}
+{"date":"2026-05-31","agent":"claude-sonnet-4-6","action":"create","target":"changes.jsonl","note":"Created append-only routine change log; established doc policy in AGENTS.md"}

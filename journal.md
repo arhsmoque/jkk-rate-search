@@ -1,8 +1,10 @@
 # Journal — JKK Rate Search
 
 Living record of decisions, reasoning, and context. Not a changelog.
-For what exists now, read `AGENTS.md`. For what changed when, read `git log`.
+For what exists now, read `AGENTS.md`. For routine change receipts, read `changes.jsonl`. For raw history, read `git log`.
 This is for understanding *why* — the weight behind decisions, what was tried and rejected, what the user wanted and why it matters.
+
+Write here when a decision has gravity: an approach was rejected, a constraint drove the design, the user stated intent. Do not write here for routine edits (font size, colour tweak, link update) — those go to `changes.jsonl` as a single JSON line.
 
 ---
 
