@@ -545,6 +545,16 @@ function init_event_listeners() {
       els.searchInput.focus();
     }
   });
+
+  // Dark mode toggle
+  const darkToggle = document.getElementById("dark-toggle");
+  if (darkToggle) {
+    darkToggle.addEventListener("click", () => {
+      const dark = !document.documentElement.classList.contains("dark");
+      document.documentElement.classList.toggle("dark", dark);
+      localStorage.setItem("jkk-dark", dark ? "1" : "0");
+    });
+  }
 }
 
 async function init_app() {

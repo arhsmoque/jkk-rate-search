@@ -1,48 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
   <meta charset="UTF-8">
+  <!-- Dark mode class set before first paint — prevents flash -->
+  <script>(function(){if(localStorage.getItem('jkk-dark')==='1')document.documentElement.classList.add('dark');}());</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#003366">
-  <meta name="description" content="Search JKR Jadual Kadar Kerja rates across Civil, Electrical and Pukal schedules.">
-  <!-- CSP: allow sql.js CDN, WASM, inline styles -->
+  <meta name="description" content="Carian kadar JKR Jadual Kadar Kerja — Kejuruteraan Awam &amp; Bangunan, Elektrik, dan Pukal 2023.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
-  <title>JKK Rate Search</title>
+  <title>Jadual Kadar Kerja — Carian Kadar JKR</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23003366'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3E🔍%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23003366'/%3E%3Ctext x='50' y='68' font-size='46' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3EJKK%3C/text%3E%3C/svg%3E">
 </head>
 <body>
   <div class="container">
+
     <div class="sticky-header">
       <header>
-        <h1>JKK Rate Search</h1>
-        <p>JKR Jadual Kadar Kerja — Civil · Electrical · Pukal</p>
+        <div class="header-main">
+          <div class="header-brand">
+            <span class="brand-eyebrow">Jabatan Kerja Raya Malaysia</span>
+            <h1>Jadual Kadar Kerja</h1>
+            <p>Kejuruteraan Awam &amp; Bangunan &nbsp;·&nbsp; Elektrik &nbsp;·&nbsp; Pukal &mdash; 2023</p>
+          </div>
+          <button id="dark-toggle" class="dark-toggle" aria-label="Togol mod gelap">
+            <!-- Sun icon — shown in dark mode -->
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.75"/>
+              <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
+            <!-- Moon icon — shown in light mode -->
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <div class="search-wrap">
+        <!-- SVG gradient defs — declared once, referenced by icon below -->
+        <svg width="0" height="0" style="position:absolute">
+          <defs>
+            <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#003366"/>
+            </linearGradient>
+          </defs>
+        </svg>
         <input
           id="search-input"
           type="text"
-          aria-label="Search JKK rates"
-          placeholder="Search e.g. scaffold, konkrit, paip…"
+          aria-label="Cari kadar JKK"
+          placeholder="Cari e.g. konkrit, paip, scaffold, pendawaian…"
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
         >
-        <span class="icon">🔍</span>
+        <span class="search-icon-wrap" aria-hidden="true">
+          <svg class="search-icon-svg" viewBox="0 0 22 22" fill="none">
+            <circle cx="9.5" cy="9.5" r="6.5" stroke="url(#sg)" stroke-width="2"/>
+            <path d="M14.5 14.5L19 19" stroke="url(#sg)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
       </div>
 
       <div id="status-bar" class="status-bar">
         <span class="spinner"></span>
-        <span id="status-text">Loading…</span>
+        <span id="status-text">Memuatkan…</span>
       </div>
     </div>
 
     <ul id="results-list" class="results-list" role="list"></ul>
 
+    <!-- Downloads section — update href values once PDF URLs are confirmed -->
+    <section class="downloads-section" aria-label="Muat Turun Dokumen Asal">
+      <div class="downloads-heading">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="dl-heading-icon">
+          <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M13 2v5h5M10 9v6M7.5 12.5L10 15l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Dokumen Asal JKR
+      </div>
+      <div class="downloads-grid">
+        <a href="#" class="download-card pending" data-doc="civil">
+          <svg class="dl-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13 2v5h5" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <div class="dl-info">
+            <div class="dl-name">JKK — Kejuruteraan Awam &amp; Bangunan</div>
+            <div class="dl-edition">Edisi 2023</div>
+          </div>
+          <svg class="dl-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 3v8M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#" class="download-card pending" data-doc="electrical">
+          <svg class="dl-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13 2v5h5" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <div class="dl-info">
+            <div class="dl-name">JKK — Elektrik</div>
+            <div class="dl-edition">Edisi 2023</div>
+          </div>
+          <svg class="dl-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 3v8M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#" class="download-card pending" data-doc="pukal">
+          <svg class="dl-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13 2v5h5" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <div class="dl-info">
+            <div class="dl-name">JKK — Pukal</div>
+            <div class="dl-edition">Edisi semasa</div>
+          </div>
+          <svg class="dl-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 3v8M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+      <p class="downloads-note">Pautan PDF asal belum disahkan — kemaskini atribut <code>href</code> apabila URL disahkan.</p>
+    </section>
+
     <footer class="footer">
-      Offline-ready • Data: JKR 2023 / Pukal • Press / to search
+      Luar talian &nbsp;·&nbsp; Data: JKR 2023 / Pukal &nbsp;·&nbsp; Tekan <kbd>/</kbd> untuk cari
     </footer>
   </div>
 
