@@ -3,7 +3,12 @@
 # dependencies = ["pyyaml"]
 # ///
 """
-Deploy jkk-rate-search to Cloudflare Pages.
+Deploy jkk-rate-search to Cloudflare Workers (Static Assets).
+
+The repo's GitHub integration is a Workers service, so this manual path
+deploys to the same target via `wrangler deploy` (reads wrangler.jsonc).
+On push, the git integration deploys automatically — this script is the
+manual/fallback path.
 
 AODP: level 1 | risk_class: local_mutation | domain: infrastructure
 """
@@ -69,36 +74,28 @@ def run_wrangler(args: list[str], env: dict, cwd: Path) -> subprocess.CompletedP
     )
 
 
-def fix_wrangler_jsonc() -> None:
-    """Ensure wrangler.jsonc has pages_build_output_dir for Pages deploy."""
+def check_wrangler_jsonc() -> None:
+    """Verify wrangler.jsonc is a valid Workers Static Assets config.
+
+    Does NOT mutate the file — wrangler.jsonc is the source of truth and is
+    shared with the Workers git integration. We only warn on misconfiguration.
+    """
     wf = REPO_DIR / "wrangler.jsonc"
     if not wf.exists():
-        print("[deploy] Creating wrangler.jsonc with Pages config...")
-        wf.write_text(
-            '{'
-            '\n  "name": "jkk-rate-search",'
-            '\n  "compatibility_date": "2026-05-27",'
-            '\n  "pages_build_output_dir": "."'
-            '\n}\n',
-            encoding="utf-8",
-        )
-        return
+        print("[deploy] ERROR: wrangler.jsonc not found.")
+        raise SystemExit(1)
 
     text = wf.read_text(encoding="utf-8")
-    if "pages_build_output_dir" not in text:
-        print("[deploy] Adding pages_build_output_dir to wrangler.jsonc...")
-        # Remove assets.directory (Workers-style) and add pages_build_output_dir
-        import re
-
-        # Remove assets block if present
-        text = re.sub(r',?\s*"assets":\s*\{[^}]*\}', '', text)
-        # Add pages_build_output_dir before closing brace
-        text = re.sub(
-            r'(\}\s*)\Z',
-            r'  "pages_build_output_dir": "."\n}',
-            text,
+    if "pages_build_output_dir" in text:
+        print(
+            "[deploy] WARNING: wrangler.jsonc contains 'pages_build_output_dir' "
+            "(Pages-only). This is a Workers deploy — expected an 'assets' block."
         )
-        wf.write_text(text, encoding="utf-8")
+    elif '"assets"' not in text:
+        print(
+            "[deploy] WARNING: wrangler.jsonc has no 'assets' block — Workers "
+            "Static Assets deploy may fail."
+        )
 
 
 def main() -> int:
@@ -123,12 +120,12 @@ def main() -> int:
             print("[deploy] ERROR: No Cloudflare credentials found in vault.")
             return 1
 
-    fix_wrangler_jsonc()
+    check_wrangler_jsonc()
 
     # --- Deploy ---
-    # Use 'wrangler pages deploy . --project-name <name>'
+    # Workers Static Assets: 'wrangler deploy' reads wrangler.jsonc (assets-only).
     result = run_wrangler(
-        ["pages", "deploy", ".", "--project-name", PROJECT_NAME],
+        ["deploy"],
         env,
         REPO_DIR,
     )

@@ -26,7 +26,7 @@ Civil tables include multi-rate rows (e.g. Concrete Gred 15/20/25/30/35/40).
 - **Frontend:** Vanilla HTML/JS/CSS, no framework, no build step
 - **Database:** SQLite with FTS5, running in-browser via sql.js (WASM)
 - **Persistence:** IndexedDB snapshot pattern
-- **Hosting:** Cloudflare Pages (primary) / GitHub Pages (fallback)
+- **Hosting:** Cloudflare Workers Static Assets (assets-only Worker, auto-deploy on push)
 
 ## Usage
 
@@ -44,19 +44,22 @@ Press `/` anywhere to focus the search bar.
 
 ```
 .
-├── index.html              # Entry point + CSP
-├── styles.css              # Mobile-first CSS
-├── app.js                  # Core / Port / Adapter structure
-├── manifest.webmanifest    # PWA manifest
-├── service-worker.js       # Offline shell caching
-├── wrangler.jsonc          # Cloudflare Pages config
+├── public/                 # Served assets (= site root). assets.directory in wrangler.jsonc
+│   ├── index.html          # Entry point + CSP
+│   ├── styles.css          # Mobile-first CSS
+│   ├── app.js              # Core / Port / Adapter structure
+│   ├── manifest.webmanifest# PWA manifest
+│   ├── service-worker.js   # Offline shell caching
+│   ├── _headers            # Security / content-type headers
+│   ├── vendor/
+│   │   ├── sql-wasm.js     # sql.js engine (vendored for offline)
+│   │   └── sql-wasm.wasm   # sql.js WASM binary
+│   └── assets/
+│       └── jkk-master.db   # Generated SQLite database
+├── wrangler.jsonc          # Cloudflare Workers Static Assets config
+├── deploy-cf-pages.py      # Manual deploy (wrangler deploy)
 ├── AGENTS.md               # Operating rules for agents
-├── METADATA.yml            # AODP artifact declaration
-├── vendor/
-│   ├── sql-wasm.js         # sql.js engine (vendored for offline)
-│   └── sql-wasm.wasm       # sql.js WASM binary
-└── assets/
-    └── jkk-master.db       # Generated SQLite database
+└── METADATA.yml            # AODP artifact declaration
 ```
 
 ## Rebuilding the database
@@ -69,25 +72,29 @@ cd D:\00_ARH\_agent-output\260527-08_web_kimi_jkk-rate-search-pwa
 pwsh -File scripts/build-static-site.ps1
 
 # Then copy the new DB into this repo
-Copy-Item webapp\assets\jkk-master.db D:\00_ARH\.ARH-Cloned-Github-Repo\jkk-rate-search\assets\
-git add assets/jkk-master.db
+Copy-Item webapp\assets\jkk-master.db D:\00_ARH\.ARH-Cloned-Github-Repo\jkk-rate-search\public\assets\
+git add public/assets/jkk-master.db
 git commit -m "data: update JKK database"
 git push origin main
 ```
 
 ## Deployment
 
-### Cloudflare Pages (recommended)
+### Cloudflare Workers — Static Assets (primary)
 
-1. Connect this GitHub repo to [Cloudflare Pages](https://dash.cloudflare.com)
-2. Set build output directory to `/` (root)
-3. Deploys automatically on every push to `main`
+This repo's GitHub integration is a **Workers** service ("Workers Builds"). On every
+push to `main`, Cloudflare builds and deploys the assets-only Worker defined in
+`wrangler.jsonc` (which serves `./public`). No build command, no Worker script.
 
-### GitHub Pages (fallback)
+Manual / fallback deploy from a workstation:
 
-1. Go to repo Settings → Pages
-2. Source: Deploy from a branch → `main` / root
-3. Push to `main`
+```powershell
+python deploy-cf-pages.py   # runs `wrangler deploy`
+```
+
+> Note: the config must stay a **Workers** config (`assets`), not a Pages config
+> (`pages_build_output_dir`) — the git integration is Workers, so a Pages config
+> fails the build.
 
 ## Notes
 

@@ -10,8 +10,8 @@ Governing protocol: [AODP v1.7](D:\00_ARH\.ARH-AGENT-ENV\_environment-kernel\ARH
 ## Agent quick commands
 
 ```powershell
-# Local smoke test
-python -m http.server 8000
+# Local smoke test (serve the deployable assets)
+cd public; python -m http.server 8000
 # Then open http://localhost:8000
 
 # Rebuild database (after PDF updates)
@@ -26,21 +26,23 @@ pwsh -File scripts/validate-deployment.ps1
 
 ## Architecture in one paragraph
 
-Zero-build static PWA. SQLite database (with FTS5) runs in-browser via sql.js WASM. Data is cached in IndexedDB after first download. Cloudflare Pages serves the static files. No backend, no API keys, no Firebase.
+Zero-build static PWA. SQLite database (with FTS5) runs in-browser via sql.js WASM. Data is cached in IndexedDB after first download. The deployable site lives in `public/`, served as an assets-only Cloudflare Worker (Workers Static Assets). No backend, no API keys, no Firebase.
 
 ---
 
 ## File roles
 
+All served files live under `public/` (= site root). Tooling/docs stay at repo root.
+
 | File | AODP role | Who edits it |
 |---|---|---|
-| `index.html` | **Base** — entry point + CSP | Engine changes only |
-| `app.js` | **Base** — search logic, storage, UI | Engine changes only |
-| `styles.css` | **Base** — stylesheet | Engine changes only |
-| `wrangler.jsonc` | **Adapter** — deployment config | Infra changes only |
-| `service-worker.js` | **Adapter** — offline cache | Cache strategy changes |
-| `manifest.webmanifest` | **Adapter** — PWA manifest | App metadata changes |
-| `assets/jkk-master.db` | **Data** — generated SQLite | Rebuilt by extractor only |
+| `public/index.html` | **Base** — entry point + CSP | Engine changes only |
+| `public/app.js` | **Base** — search logic, storage, UI | Engine changes only |
+| `public/styles.css` | **Base** — stylesheet | Engine changes only |
+| `wrangler.jsonc` | **Adapter** — deployment config (serves `./public`) | Infra changes only |
+| `public/service-worker.js` | **Adapter** — offline cache | Cache strategy changes |
+| `public/manifest.webmanifest` | **Adapter** — PWA manifest | App metadata changes |
+| `public/assets/jkk-master.db` | **Data** — generated SQLite | Rebuilt by extractor only |
 
 ---
 
@@ -89,21 +91,28 @@ To verify the app works after a change:
 4. Tap a result — detail panel should show rates
 5. Check DevTools console for errors
 
-**Deploy (Cloudflare Pages — authoritative):**
+**Deploy (Cloudflare Workers Static Assets — authoritative):**
+
+The GitHub integration for this repo is a **Workers** service ("Workers Builds").
+A push to `main` triggers an automatic build+deploy of the assets-only Worker
+(`wrangler.jsonc` → `assets.directory: ./public`). No build command, no script.
+
 ```powershell
 # From D:\00_ARH\.ARH-Cloned-Github-Repo\jkk-rate-search
 git add <files>
 git commit -m "<component>: <what changed>"
-git push origin main
-python deploy-cf-pages.py
+git push origin main          # git integration auto-deploys
+python deploy-cf-pages.py      # optional: manual deploy to the same target
 ```
 
-`deploy-cf-pages.py` reads the Cloudflare API token from the ARH vault and calls `wrangler pages deploy .` with the correct cwd. **Always run from the repo directory** — `.assetsignore` only applies within the repo directory and wrangler calculates file sizes relative to cwd.
+`deploy-cf-pages.py` reads the Cloudflare API token from the ARH vault and calls
+`wrangler deploy` (which reads `wrangler.jsonc`). **Always run from the repo
+directory.**
 
-The wrangler.jsonc has a `pages_build_output_dir: "."` setting but **CF Pages git integration is not confirmed to be active**. Do not rely on `git push` alone to trigger a deploy — run `deploy-cf-pages.py` explicitly after pushing.
-
-**Deploy (GitHub Pages fallback):**
-Push `webapp/` contents to `gh-pages` branch or enable Pages on `main` root.
+**Hard rule:** `wrangler.jsonc` must stay a **Workers** config (`assets` block),
+never a Pages config (`pages_build_output_dir`). The git integration is Workers —
+a Pages config has no entry point and fails the build. Do NOT re-add
+`pages_build_output_dir` or switch to `wrangler pages deploy`.
 
 ---
 
@@ -112,9 +121,9 @@ Push `webapp/` contents to `gh-pages` branch or enable Pages on `main` root.
 | Symptom | Cause | Recovery |
 |---|---|---|
 | "Failed to load database. Refresh to retry." | CSP blocks WASM compilation | Verify `script-src 'self' 'wasm-unsafe-eval'` in both `index.html` and `_headers` |
-| `deploy-cf-pages.py` exits with auth error 9106 | Cloudflare API token expired or wrong scope | Re-generate at https://dash.cloudflare.com/profile/api-tokens (needs Cloudflare Pages:Edit + Account:Read), update vault key `cloudflare_api_token` |
-| `deploy-cf-pages.py` reports "project not found" | CF Pages project was deleted or name changed | Create project: `wrangler pages project create jkk-rate-search` from repo directory |
-| Cloudflare Pages unavailable entirely | CF outage | Deploy to GitHub Pages fallback: push to `main`, enable Pages in repo settings → root of `main` |
+| `deploy-cf-pages.py` exits with auth error 9106 | Cloudflare API token expired or wrong scope | Re-generate at https://dash.cloudflare.com/profile/api-tokens (needs Workers Scripts:Edit + Account:Read), update vault key `cloudflare_api_token` |
+| Workers build fails: "no entry point" / "Missing entry-point" | `wrangler.jsonc` reverted to a Pages config (`pages_build_output_dir`) | Restore the `assets` block pointing at `./public`; remove any `pages_build_output_dir` |
+| Workers build uploads `.git` or tooling files | `assets.directory` points at repo root (`.`) instead of `./public` | Keep `assets.directory` = `./public`; never serve the repo root |
 | DB rebuild scripts not found | `260527-08_web_kimi_jkk-rate-search-pwa` folder missing from `_agent-output` | Scripts are at `D:\00_ARH\_agent-output\260527-08_web_kimi_jkk-rate-search-pwa\scripts\`. If folder is gone, re-extract from git history or request rebuild from the generating agent. |
 
 ---
@@ -131,7 +140,7 @@ When new JKK PDFs are released:
    ```
 3. Copy the generated DB to this repo:
    ```powershell
-   Copy-Item D:\00_ARH\_agent-output\260527-08_web_kimi_jkk-rate-search-pwa\webapp\assets\jkk-master.db D:\00_ARH\.ARH-Cloned-Github-Repo\jkk-rate-search\assets\
+   Copy-Item D:\00_ARH\_agent-output\260527-08_web_kimi_jkk-rate-search-pwa\webapp\assets\jkk-master.db D:\00_ARH\.ARH-Cloned-Github-Repo\jkk-rate-search\public\assets\
    ```
 4. Commit and push
 
@@ -146,7 +155,7 @@ When new JKK PDFs are released:
 | `index.html` render | `read_only` | No mutation |
 | `app.js` search | `read_only` | Queries local SQLite only |
 | `app.js` IndexedDB cache | `local_mutation` | Writes DB snapshot to browser storage |
-| Deploy to Cloudflare Pages | `external_mutation` | Public URL change |
+| Deploy to Cloudflare Workers | `external_mutation` | Public URL change |
 
 ---
 
@@ -173,12 +182,12 @@ git push origin main
 
 ## Deployment target
 
-Primary: **Cloudflare Pages** (via `wrangler.jsonc`)
-Fallback: **GitHub Pages** (static file serving)
+**Cloudflare Workers — Static Assets** (assets-only Worker via `wrangler.jsonc`,
+serving `./public`). The repo's GitHub integration is a Workers service, so a push
+to `main` auto-deploys.
 
-Cloudflare Pages is preferred for:
+Preferred for:
 - Faster global CDN (important for the ~1 MB DB file)
 - Unlimited bandwidth
-- Consistency with existing ARH infrastructure (arh-fnb-webapp)
-
-GitHub Pages works as a zero-config fallback if Cloudflare is unavailable.
+- Git-push auto-deploy with no separate build config
+- Consistency with existing ARH infrastructure
