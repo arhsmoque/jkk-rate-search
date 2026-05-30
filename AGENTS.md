@@ -241,7 +241,6 @@ When new JKK PDFs are released:
 - Do not add hardcoded JKK data to `app.js` or `index.html` — all data lives in the SQLite file.
 - Do not add a build step or bundler. The no-dependency constraint is intentional.
 - Do not store API keys or secrets in source — this app has none.
-- Do not change the WhatsApp button colour (wait, this isn't fnb-webapp — there is no WhatsApp button).
 
 ---
 
@@ -255,16 +254,3 @@ git commit -m "<component>: <what changed>"
 git push origin main
 ```
 
----
-
-## Deployment target
-
-**Cloudflare Workers — Static Assets** (assets-only Worker via `wrangler.jsonc`,
-serving `./public`). The repo's GitHub integration is a Workers service, so a push
-to `main` auto-deploys.
-
-Preferred for:
-- Faster global CDN (important for the ~1 MB DB file)
-- Unlimited bandwidth
-- Git-push auto-deploy with no separate build config
-- Consistency with existing ARH infrastructure
