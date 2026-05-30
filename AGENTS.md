@@ -24,6 +24,31 @@ pwsh -File scripts/validate-deployment.ps1
 
 ---
 
+## Edit map — go here first
+
+Agents: edit source files directly. The `scripts/patch-*.ps1` files are for humans running one-off CLI patches — skip them.
+
+| Want to change | File | Locator |
+|---|---|---|
+| PDF download links (Civil / Elektrik / Pukal) | `public/index.html` | `<a class="download-card" data-doc="civil\|electrical\|pukal">` — edit `href=` |
+| Page title (browser tab) | `public/index.html:11` | `<title>` tag |
+| Header / subtitle text | `public/index.html:23-25` | `.header-brand` div — `<h1>` and `<p>` |
+| Search placeholder | `public/index.html:55` | `placeholder="..."` on `#search-input` |
+| Footer text | `public/index.html:130` | `<footer class="footer">` |
+| Downloads note text | `public/index.html:126` | `<p class="downloads-note">` |
+| Search result limit | `public/app.js` | `CONFIG.SEARCH_LIMIT` (default 20) |
+| Fuzzy match tolerance | `public/app.js` | `CONFIG.FUZZY_MIN_SIM` (0.0–1.0; lower = more lenient) |
+| Search debounce delay | `public/app.js` | `CONFIG.SEARCH_DEBOUNCE_MS` (default 150) |
+| Force IndexedDB cache refresh | `public/app.js` | `IndexedDbStorageAdapter.KEY` — increment version suffix |
+| Rate table columns | `public/app.js` | `RATE_TABLE_COLS` array — between the `// ── App: RATE_TABLE_COLS` and `// END RATE_TABLE_COLS` markers |
+| Brand / accent colour | `public/styles.css:7` | `--accent:` in `:root` block |
+| Dark mode colours | `public/styles.css:52` | `html.dark { ... }` block |
+| PWA app name | `public/manifest.webmanifest` | `name` and `short_name` fields |
+| CF Worker name / compat date | `wrangler.jsonc` | `name` and `compatibility_date` |
+| DB file path served to browser | `public/app.js` | `CONFIG.DB_PATH` (default `"assets/jkk-master.db"`) |
+
+---
+
 ## Architecture in one paragraph
 
 Zero-build static PWA. SQLite database is read in-browser via sql.js (WASM) and cached in IndexedDB after first download. **Search runs in-memory** (prefix match, with a Levenshtein fuzzy fallback) over the ~2.4k-row index — the vendored sql.js build has **no FTS5 module**, so the DB's `fts5` table is unused and `MATCH` must never be called. The deployable site lives in `public/`, served as an assets-only Cloudflare Worker (Workers Static Assets). No backend, no API keys, no Firebase.
