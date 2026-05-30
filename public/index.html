@@ -14,31 +14,32 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>JKK Rate Search</h1>
-      <p>JKR Jadual Kadar Kerja — Civil · Electrical · Pukal</p>
-    </header>
+    <div class="sticky-header">
+      <header>
+        <h1>JKK Rate Search</h1>
+        <p>JKR Jadual Kadar Kerja — Civil · Electrical · Pukal</p>
+      </header>
 
-    <div class="search-wrap">
-      <input
-        id="search-input"
-        type="text"
-        aria-label="Search JKK rates"
-        placeholder="Search e.g. scaffold, konkrit, paip…"
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-      >
-      <span class="icon">🔍</span>
-    </div>
+      <div class="search-wrap">
+        <input
+          id="search-input"
+          type="text"
+          aria-label="Search JKK rates"
+          placeholder="Search e.g. scaffold, konkrit, paip…"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        >
+        <span class="icon">🔍</span>
+      </div>
 
-    <div id="status-bar" class="status-bar">
-      <span class="spinner"></span>
-      <span id="status-text">Loading…</span>
+      <div id="status-bar" class="status-bar">
+        <span class="spinner"></span>
+        <span id="status-text">Loading…</span>
+      </div>
     </div>
 
     <ul id="results-list" class="results-list" role="list"></ul>
-    <div id="detail-panel"></div>
 
     <footer class="footer">
       Offline-ready • Data: JKR 2023 / Pukal • Press / to search

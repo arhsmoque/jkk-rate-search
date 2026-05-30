@@ -1,31 +1,60 @@
+/* ── Token map — every visual constant lives here ───────────────────────────
+   Patch colours/fonts with:  scripts/patch-theme.ps1
+   Nothing outside :root should hardcode a hex, font-family, or font-size.    */
+
 :root {
-  --bg: #f5f7fa;
-  --surface: #ffffff;
-  --text: #1a1a2e;
-  --muted: #6b7280;
-  --accent: #003366;
+  /* colours */
+  --bg:           #f5f7fa;
+  --surface:      #ffffff;
+  --text:         #1a1a2e;
+  --muted:        #6b7280;
+  --accent:       #003366;
   --accent-light: #e6f0ff;
-  --border: #d1d5db;
-  --success: #059669;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1);
-  --radius: 8px;
+  --border:       #d1d5db;
+  --success:      #059669;
+  --chip-bg:      #e5e7eb;
+  --chip-text:    #374151;
+  --pill-bg:      #f3f4f6;
+  --remarks-bg:   #fafafa;
+  /* elevation */
+  --shadow:        0 1px 3px rgba(0,0,0,0.10);
+  --shadow-detail: 0 3px 8px rgba(0,0,0,0.08);
+  --radius:        8px;
+  --radius-sm:     4px;
+  /* typography — patch-theme.ps1 accepts -Fs* params for any of these */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fs-title:  1.25rem;   /* app heading h1            */
+  --fs-body:   1rem;      /* search input, body base   */
+  --fs-desc:   0.95rem;   /* item description (detail) */
+  --fs-item:   0.9rem;    /* result description (list) */
+  --fs-code:   0.85rem;   /* item-no code badge        */
+  --fs-meta:   0.8rem;    /* meta line, status bar     */
+  --fs-label:  0.75rem;   /* small labels              */
+  --fs-tiny:   0.7rem;    /* pills, footer             */
+  --fs-micro:  0.65rem;   /* doc-type badge, type tag  */
 }
+
+/* ── Reset ─────────────────────────────────────────────────────────────────── */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-family);
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   min-height: 100vh;
 }
 
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+
 .container {
   max-width: 720px;
   margin: 0 auto;
   padding: 1rem;
 }
+
+/* ── Sticky header ───────────────────────────────────────────────────────────── */
 
 .sticky-header {
   position: sticky;
@@ -43,17 +72,19 @@ header {
 }
 
 header h1 {
-  font-size: 1.25rem;
+  font-size: var(--fs-title);
   font-weight: 700;
   color: var(--accent);
   letter-spacing: -0.02em;
 }
 
 header p {
-  font-size: 0.8rem;
+  font-size: var(--fs-meta);
   color: var(--muted);
   margin-top: 0.25rem;
 }
+
+/* ── Search bar ──────────────────────────────────────────────────────────────── */
 
 .search-wrap {
   position: relative;
@@ -63,7 +94,7 @@ header p {
 .search-wrap input {
   width: 100%;
   padding: 0.75rem 2.5rem 0.75rem 1rem;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -86,11 +117,13 @@ header p {
   pointer-events: none;
 }
 
+/* ── Status bar ──────────────────────────────────────────────────────────────── */
+
 .status-bar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-meta);
   color: var(--muted);
   margin-bottom: 0.75rem;
   min-height: 1.25rem;
@@ -110,6 +143,8 @@ header p {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Results list ────────────────────────────────────────────────────────────── */
+
 .results-list {
   list-style: none;
   display: flex;
@@ -117,17 +152,11 @@ header p {
   gap: 0;
 }
 
-.results-list .result-item {
-  margin-bottom: 0.5rem;
-}
+.results-list .result-item         { margin-bottom: 0.5rem; }
+.results-list .result-item.active  { margin-bottom: 0; }
+.results-list .detail-inline       { margin-bottom: 0.5rem; }
 
-.results-list .result-item.active {
-  margin-bottom: 0;
-}
-
-.results-list .detail-inline {
-  margin-bottom: 0.5rem;
-}
+/* ── Result card ─────────────────────────────────────────────────────────────── */
 
 .result-item {
   background: var(--surface);
@@ -141,11 +170,13 @@ header p {
   gap: 0.25rem;
 }
 
-.result-item:hover, .result-item:focus {
+.result-item:hover,
+.result-item:focus {
   border-color: var(--accent);
   box-shadow: var(--shadow);
 }
 
+/* Active card merges visually with the inline detail below it */
 .result-item.active {
   border-color: var(--accent);
   border-bottom-color: transparent;
@@ -163,16 +194,16 @@ header p {
 
 .result-item .code {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--fs-code);
   color: var(--accent);
   background: var(--accent-light);
   padding: 0.1rem 0.35rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
 }
 
 .result-item .desc {
-  font-size: 0.9rem;
+  font-size: var(--fs-item);
   color: var(--text);
   flex: 1;
   overflow: hidden;
@@ -188,17 +219,17 @@ header p {
 }
 
 .result-item .vpill {
-  font-size: 0.7rem;
-  color: #374151;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  font-size: var(--fs-tiny);
+  color: var(--chip-text);
+  background: var(--pill-bg);
+  border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.05rem 0.3rem;
   white-space: nowrap;
 }
 
 .result-item .meta {
-  font-size: 0.75rem;
+  font-size: var(--fs-label);
   color: var(--muted);
   display: flex;
   gap: 0.5rem;
@@ -206,14 +237,16 @@ header p {
 }
 
 .result-item .badge {
-  font-size: 0.65rem;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.1rem 0.3rem;
-  border-radius: 4px;
-  background: #e5e7eb;
-  color: #374151;
+  border-radius: var(--radius-sm);
+  background: var(--chip-bg);
+  color: var(--chip-text);
 }
+
+/* ── Inline detail accordion ─────────────────────────────────────────────────── */
 
 .detail-inline {
   list-style: none;
@@ -222,9 +255,8 @@ header p {
   border-top: none;
   border-radius: 0 0 var(--radius) var(--radius);
   padding: 0.85rem 1rem 1rem;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-detail);
   animation: fadeIn 0.15s ease-out;
-  margin-bottom: 0.25rem;
 }
 
 @keyframes fadeIn {
@@ -237,59 +269,65 @@ header p {
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 .detail-inline .detail-code {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: var(--fs-body);
   color: var(--accent);
 }
 
+.detail-inline .detail-meta {
+  font-size: var(--fs-meta);
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+
 .detail-inline .detail-section {
-  font-size: 0.75rem;
+  display: inline-block;
+  font-size: var(--fs-tiny);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--accent);
   background: var(--accent-light);
   padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  display: inline-block;
+  border-radius: var(--radius-sm);
   margin-bottom: 0.5rem;
 }
 
 .detail-inline .detail-desc {
-  font-size: 0.95rem;
+  font-size: var(--fs-desc);
   margin-bottom: 0.5rem;
   line-height: 1.55;
 }
 
 .detail-inline .detail-remarks {
-  font-size: 0.8rem;
+  font-size: var(--fs-meta);
   color: var(--muted);
-  background: #fafafa;
+  background: var(--remarks-bg);
   border-left: 3px solid var(--border);
   padding: 0.35rem 0.6rem;
   margin-bottom: 0.75rem;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
-.detail-inline .detail-meta {
-  font-size: 0.8rem;
+.detail-inline .no-rates {
   color: var(--muted);
-  margin-bottom: 0.25rem;
+  font-size: var(--fs-meta);
 }
+
+/* ── Rates table ─────────────────────────────────────────────────────────────── */
 
 .detail-inline .rates-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--fs-item);
 }
 
 .detail-inline .rates-table th,
 .detail-inline .rates-table td {
-  text-align: left;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
 }
@@ -298,26 +336,25 @@ header p {
   background: var(--accent-light);
   color: var(--accent);
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
 }
 
 .detail-inline .rates-table td:last-child {
   font-weight: 600;
   color: var(--success);
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .detail-inline .rates-table .variant-type-badge {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: var(--fs-micro);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.1rem 0.3rem;
-  border-radius: 4px;
-  background: #e5e7eb;
-  color: #374151;
+  border-radius: var(--radius-sm);
+  background: var(--chip-bg);
+  color: var(--chip-text);
 }
 
 .detail-inline .rates-table .muted-dash {
@@ -333,23 +370,27 @@ header p {
   line-height: 1;
 }
 
+/* ── Misc ────────────────────────────────────────────────────────────────────── */
+
 .empty-state {
   text-align: center;
   padding: 2rem 1rem;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--fs-item);
 }
 
 .footer {
   text-align: center;
-  font-size: 0.7rem;
+  font-size: var(--fs-tiny);
   color: var(--muted);
   margin-top: 2rem;
   padding-bottom: 1rem;
 }
 
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
+
 @media (max-width: 480px) {
-  .container { padding: 0.75rem; }
-  header h1 { font-size: 1.1rem; }
+  .container     { padding: 0.75rem; }
+  header h1      { font-size: 1.1rem; }
   .result-item .desc { white-space: normal; }
 }
