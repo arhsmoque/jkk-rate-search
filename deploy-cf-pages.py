@@ -85,13 +85,17 @@ def check_wrangler_jsonc() -> None:
         print("[deploy] ERROR: wrangler.jsonc not found.")
         raise SystemExit(1)
 
+    import re
+
     text = wf.read_text(encoding="utf-8")
-    if "pages_build_output_dir" in text:
+    # Strip // line comments so keywords mentioned in comments don't false-match.
+    code = re.sub(r"//[^\n]*", "", text)
+    if '"pages_build_output_dir"' in code:
         print(
-            "[deploy] WARNING: wrangler.jsonc contains 'pages_build_output_dir' "
+            "[deploy] WARNING: wrangler.jsonc sets 'pages_build_output_dir' "
             "(Pages-only). This is a Workers deploy — expected an 'assets' block."
         )
-    elif '"assets"' not in text:
+    elif '"assets"' not in code:
         print(
             "[deploy] WARNING: wrangler.jsonc has no 'assets' block — Workers "
             "Static Assets deploy may fail."
