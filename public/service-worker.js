@@ -1,4 +1,4 @@
-const CACHE_NAME = "jkk-rate-search-v3";
+const CACHE_NAME = "air-selangor-specs-v1";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -32,8 +32,7 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
-  // Network-first for API/data, cache-first for shell
-  if (req.url.includes("jkk-master.db")) {
+  if (req.url.includes("air-selangor-specs.db")) {
     e.respondWith(fetch(req).catch(() => caches.match(req)));
     return;
   }

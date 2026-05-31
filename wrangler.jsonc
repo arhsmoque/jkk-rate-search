@@ -1,17 +1,6 @@
 {
-  // Cloudflare Workers — Static Assets deployment config.
-  //
-  // The GitHub integration for this repo is a *Workers* service ("Workers Builds"),
-  // not a Pages project. A Pages-only `pages_build_output_dir` has no Worker entry
-  // point, so the Workers build fails on every push.
-  //
-  // With only `assets` and no `main`, Wrangler deploys an assets-only Worker — it
-  // serves the static site directly, no Worker script required. This makes the
-  // existing git integration green on push.
-  //
-  // Assets live in ./public so the repo root (.git, tooling, docs) is never served.
-  "name": "jkk-rate-search",
-  "compatibility_date": "2026-05-27",
+  "name": "air-selangor-specs-search",
+  "compatibility_date": "2026-05-31",
   "assets": {
     "directory": "./public"
   },

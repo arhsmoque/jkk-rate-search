@@ -2,16 +2,15 @@
 <html lang="ms">
 <head>
   <meta charset="UTF-8">
-  <!-- Dark mode class set before first paint — prevents flash -->
-  <script>(function(){if(localStorage.getItem('jkk-dark')==='1')document.documentElement.classList.add('dark');}());</script>
+  <script>(function(){if(localStorage.getItem('air-selangor-dark')==='1')document.documentElement.classList.add('dark');}());</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#003366">
-  <meta name="description" content="Carian kadar JKR Jadual Kadar Kerja — Kejuruteraan Awam &amp; Bangunan, Elektrik, dan Pukal 2023.">
+  <meta name="theme-color" content="#005b96">
+  <meta name="description" content="Carian spesifikasi dan garis panduan Air Selangor — SYABAS Standard Specs 2007 & SPAN UTG 2018.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
-  <title>Jadual Kadar Kerja — Carian Kadar JKR</title>
+  <title>Air Selangor — Spesifikasi &amp; Garis Panduan</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23003366'/%3E%3Ctext x='50' y='68' font-size='46' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3EJKK%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23005b96'/%3E%3Ctext x='50' y='68' font-size='40' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3EAS%3C/text%3E%3C/svg%3E">
 </head>
 <body>
   <div class="container">
@@ -20,17 +19,15 @@
       <header>
         <div class="header-main">
           <div class="header-brand">
-            <span class="brand-eyebrow">Jabatan Kerja Raya Malaysia</span>
-            <h1>Jadual Kadar Kerja</h1>
-            <p>Kejuruteraan Awam &amp; Bangunan &nbsp;·&nbsp; Elektrik &nbsp;·&nbsp; Pukal &mdash; 2023</p>
+            <span class="brand-eyebrow">Air Selangor Specifications</span>
+            <h1>Spesifikasi &amp; Garis Panduan</h1>
+            <p>SYABAS Standard Specs 2007 &nbsp;·&nbsp; SPAN Uniform Technical Guidelines 2018</p>
           </div>
           <button id="dark-toggle" class="dark-toggle" aria-label="Togol mod gelap">
-            <!-- Sun icon — shown in dark mode -->
             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.75"/>
               <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
             </svg>
-            <!-- Moon icon — shown in light mode -->
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -39,20 +36,19 @@
       </header>
 
       <div class="search-wrap">
-        <!-- SVG gradient defs — declared once, referenced by icon below -->
         <svg width="0" height="0" style="position:absolute">
           <defs>
             <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#60a5fa"/>
-              <stop offset="100%" stop-color="#003366"/>
+              <stop offset="100%" stop-color="#005b96"/>
             </linearGradient>
           </defs>
         </svg>
         <input
           id="search-input"
           type="text"
-          aria-label="Cari kadar JKK"
-          placeholder="Cari e.g. konkrit, paip, scaffold, pendawaian…"
+          aria-label="Cari spesifikasi"
+          placeholder="Cari e.g. paip, konkrit, valves, HDPE, dewatering…"
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
@@ -65,6 +61,12 @@
         </span>
       </div>
 
+      <div class="filter-bar">
+        <button id="filter-all" class="filter-pill active" data-filter="all">Semua</button>
+        <button id="filter-syabas" class="filter-pill" data-filter="syabas">SYABAS 2007</button>
+        <button id="filter-span" class="filter-pill" data-filter="span">SPAN UTG 2018</button>
+      </div>
+
       <div id="status-bar" class="status-bar">
         <span class="spinner"></span>
         <span id="status-text">Memuatkan…</span>
@@ -73,61 +75,8 @@
 
     <ul id="results-list" class="results-list" role="list"></ul>
 
-    <!-- Downloads section — edit href on each <a class="download-card"> to update PDF links -->
-    <section class="downloads-section" aria-label="Muat Turun Dokumen Asal">
-      <div class="downloads-heading">
-        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="dl-heading-icon">
-          <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M13 2v5h5M10 9v6M7.5 12.5L10 15l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Dokumen Asal JKR
-      </div>
-      <div class="downloads-grid">
-        <a href="https://drive.google.com/file/d/1eeD9PtgX5xZteEEEt50dE3j-bxNksrZP/view?usp=sharing" class="download-card" data-doc="civil" target="_blank" rel="noopener">
-          <svg class="dl-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M13 2v5h5" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          <div class="dl-info">
-            <div class="dl-name">JKK — Kejuruteraan Awam &amp; Bangunan</div>
-            <div class="dl-edition">Edisi 2023</div>
-          </div>
-          <svg class="dl-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M8 3v8M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-        <a href="https://drive.google.com/file/d/18S6gpNRy3QQPSK4xjUyFZ1CZT6BbItlx/view?usp=sharing" class="download-card" data-doc="electrical" target="_blank" rel="noopener">
-          <svg class="dl-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M13 2v5h5" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          <div class="dl-info">
-            <div class="dl-name">JKK — Elektrik</div>
-            <div class="dl-edition">Edisi 2023</div>
-          </div>
-          <svg class="dl-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M8 3v8M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-        <a href="https://drive.google.com/file/d/12skCTyZIJa7clStwVaHFEL7ZdsCUop5K/view?usp=sharing" class="download-card" data-doc="pukal" target="_blank" rel="noopener">
-          <svg class="dl-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M13 2v5h5" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          <div class="dl-info">
-            <div class="dl-name">JKK — Pukal</div>
-            <div class="dl-edition">Edisi semasa</div>
-          </div>
-          <svg class="dl-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M8 3v8M4 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-      </div>
-      <p class="downloads-note">Muat turun terus daripada Google Drive — dihoskan oleh Construction Professionals Malaysia.</p>
-    </section>
-
     <footer class="footer">
-      Luar talian &nbsp;·&nbsp; Data: JKR 2023 / Pukal &nbsp;·&nbsp; Tekan <kbd>/</kbd> untuk cari
+      Luar talian &nbsp;·&nbsp; Data: SYABAS 2007 / SPAN UTG 2018 &nbsp;·&nbsp; Tekan <kbd>/</kbd> untuk cari
     </footer>
   </div>
 

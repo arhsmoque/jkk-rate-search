@@ -1,27 +1,21 @@
-/* ── Token map ───────────────────────────────────────────────────────────────
-   Patch colours / fonts with: scripts/patch-theme.ps1
-   Nothing outside :root / html.dark should hardcode a visual constant.        */
+/* ── Token map ─────────────────────────────────────────────────────────────── */
 
 :root {
-  /* brand colours */
-  --accent:       #003366;
-  --accent-light: rgba(0, 51, 102, 0.10);
-  --accent-mid:   #1a5299;
+  --accent:       #005b96;
+  --accent-light: rgba(0, 91, 150, 0.10);
+  --accent-mid:   #1a7ab8;
   --success:      #059669;
-  /* surface */
   --bg:           transparent;
   --surface:      rgba(255, 255, 255, 0.82);
   --surface-hdr:  rgba(237, 244, 255, 0.88);
   --text:         #1a1a2e;
   --muted:        #5a6a80;
-  --border:       rgba(0, 51, 102, 0.12);
-  --border-strong:rgba(0, 51, 102, 0.25);
-  /* chip / pill */
-  --chip-bg:      rgba(0, 51, 102, 0.08);
+  --border:       rgba(0, 91, 150, 0.12);
+  --border-strong:rgba(0, 91, 150, 0.25);
+  --chip-bg:      rgba(0, 91, 150, 0.08);
   --chip-text:    #1a3a5c;
-  --pill-bg:      rgba(0, 51, 102, 0.05);
+  --pill-bg:      rgba(0, 91, 150, 0.05);
   --remarks-bg:   rgba(255, 255, 255, 0.6);
-  /* elevation */
   --shadow:        0 1px 4px rgba(0, 30, 80, 0.10);
   --shadow-detail: 0 4px 16px rgba(0, 30, 80, 0.12);
   --shadow-card:   0 2px 12px rgba(0, 30, 80, 0.08);
@@ -29,7 +23,6 @@
   --blur-hdr:      blur(24px) saturate(180%);
   --radius:        10px;
   --radius-sm:     5px;
-  /* typography */
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --fs-title:  1.6rem;
   --fs-body:   1rem;
@@ -40,14 +33,13 @@
   --fs-label:  0.75rem;
   --fs-tiny:   0.7rem;
   --fs-micro:  0.65rem;
-  /* body gradient — overridden by html.dark */
   --body-gradient:
     radial-gradient(ellipse 65% 55% at 90% -5%,  rgba(0, 100, 220, 0.12) 0%, transparent 100%),
     radial-gradient(ellipse 55% 45% at  5% 108%, rgba(0,  60, 160, 0.09) 0%, transparent 100%),
     linear-gradient(165deg, #edf2fb 0%, #e6eeff 30%, #dce8f8 60%, #eef3fa 100%);
 }
 
-/* ── Dark mode — executive government ───────────────────────────────────────── */
+/* ── Dark mode ──────────────────────────────────────────────────────────────── */
 
 html.dark {
   --accent:        #5ba3e8;
@@ -77,10 +69,7 @@ html.dark {
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  min-height: 100%;
-  /* ensure html fills viewport for body gradient coverage */
-}
+html { min-height: 100%; }
 
 html, body {
   font-family: var(--font-family);
@@ -103,7 +92,7 @@ body {
   padding: 0 1rem 1rem;
 }
 
-/* ── Sticky header — glassmorphic ────────────────────────────────────────────── */
+/* ── Sticky header ──────────────────────────────────────────────────────────── */
 
 .sticky-header {
   position: sticky;
@@ -118,11 +107,9 @@ body {
   transition: background 0.3s, border-color 0.3s;
 }
 
-/* ── Header brand ────────────────────────────────────────────────────────────── */
+/* ── Header brand ───────────────────────────────────────────────────────────── */
 
-header {
-  margin-bottom: 0.9rem;
-}
+header { margin-bottom: 0.9rem; }
 
 .header-main {
   display: flex;
@@ -131,9 +118,7 @@ header {
   gap: 0.75rem;
 }
 
-.header-brand {
-  flex: 1;
-}
+.header-brand { flex: 1; }
 
 .brand-eyebrow {
   display: inline-block;
@@ -190,12 +175,8 @@ header p {
   box-shadow: 0 0 0 3px var(--accent-light);
 }
 
-.dark-toggle svg {
-  width: 1rem;
-  height: 1rem;
-}
+.dark-toggle svg { width: 1rem; height: 1rem; }
 
-/* Show moon in light mode, sun in dark mode */
 .icon-sun  { display: none; }
 .icon-moon { display: block; }
 html.dark .icon-sun  { display: block; }
@@ -205,7 +186,7 @@ html.dark .icon-moon { display: none; }
 
 .search-wrap {
   position: relative;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 .search-wrap input {
@@ -240,9 +221,38 @@ html.dark .icon-moon { display: none; }
   align-items: center;
 }
 
-.search-icon-svg {
-  width: 1.1rem;
-  height: 1.1rem;
+.search-icon-svg { width: 1.1rem; height: 1.1rem; }
+
+/* ── Filter bar ─────────────────────────────────────────────────────────────── */
+
+.filter-bar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--pill-bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filter-pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.filter-pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 /* ── Status bar ──────────────────────────────────────────────────────────────── */
@@ -284,7 +294,7 @@ html.dark .icon-moon { display: none; }
 .results-list .result-item.active { margin-bottom: 0; }
 .results-list .detail-inline      { margin-bottom: 0.5rem; }
 
-/* ── Result card — glassmorphic ──────────────────────────────────────────────── */
+/* ── Result card ─────────────────────────────────────────────────────────────── */
 
 .result-item {
   background: var(--surface);
@@ -297,7 +307,7 @@ html.dark .icon-moon { display: none; }
   transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
   box-shadow: var(--shadow-card);
 }
 
@@ -341,23 +351,6 @@ html.dark .icon-moon { display: none; }
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.result-item .variant-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.1rem;
-}
-
-.result-item .vpill {
-  font-size: var(--fs-tiny);
-  color: var(--chip-text);
-  background: var(--pill-bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0.05rem 0.3rem;
   white-space: nowrap;
 }
 
@@ -440,16 +433,39 @@ html.dark .icon-moon { display: none; }
   margin-bottom: 0.6rem;
   line-height: 1.6;
   color: var(--text);
+  font-weight: 600;
 }
 
 .detail-inline .detail-remarks {
-  font-size: var(--fs-meta);
-  color: var(--muted);
   background: var(--remarks-bg);
-  border-left: 3px solid var(--accent);
-  padding: 0.35rem 0.65rem;
-  margin-bottom: 0.75rem;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+}
+
+.detail-inline .remarks-label {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.detail-inline .remarks-body {
+  font-size: var(--fs-meta);
+  color: var(--text);
+  line-height: 1.7;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.detail-inline .remarks-body p {
+  margin-bottom: 0.4rem;
+}
+
+.detail-inline .remarks-body p:last-child {
+  margin-bottom: 0;
 }
 
 .detail-inline .no-rates {
@@ -457,52 +473,6 @@ html.dark .icon-moon { display: none; }
   font-size: var(--fs-meta);
   padding: 0.5rem 0;
 }
-
-/* ── Rates table ─────────────────────────────────────────────────────────────── */
-
-.detail-inline .rates-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-item);
-  margin-top: 0.25rem;
-}
-
-.detail-inline .rates-table th,
-.detail-inline .rates-table td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.detail-inline .rates-table th {
-  background: var(--accent-light);
-  color: var(--accent);
-  font-weight: 700;
-  font-size: var(--fs-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.detail-inline .rates-table tr:last-child td { border-bottom: none; }
-
-.detail-inline .rates-table td:last-child {
-  font-weight: 700;
-  color: var(--success);
-  font-variant-numeric: tabular-nums;
-}
-
-.detail-inline .rates-table .variant-type-badge {
-  display: inline-block;
-  font-size: var(--fs-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.1rem 0.3rem;
-  border-radius: 3px;
-  background: var(--chip-bg);
-  color: var(--chip-text);
-  border: 1px solid var(--border);
-}
-
-.detail-inline .rates-table .muted-dash { color: var(--border); }
 
 .detail-inline .close-btn {
   background: none;
@@ -522,106 +492,6 @@ html.dark .icon-moon { display: none; }
 }
 
 .detail-inline .close-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ── Downloads section ───────────────────────────────────────────────────────── */
-
-.downloads-section {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
-}
-
-.downloads-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: var(--fs-meta);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
-
-.dl-heading-icon {
-  width: 1rem;
-  height: 1rem;
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.downloads-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.download-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.9rem;
-  background: var(--surface);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-decoration: none;
-  color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-shadow: var(--shadow-card);
-}
-
-.download-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
-
-.download-card.pending {
-  opacity: 0.6;
-  cursor: default;
-  pointer-events: none;
-}
-
-.dl-icon {
-  width: 1.4rem;
-  height: 1.4rem;
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.dl-info { flex: 1; }
-
-.dl-name {
-  font-size: var(--fs-meta);
-  font-weight: 600;
-  color: var(--text);
-}
-
-.dl-edition {
-  font-size: var(--fs-tiny);
-  color: var(--muted);
-  margin-top: 0.1rem;
-}
-
-.dl-arrow {
-  width: 1rem;
-  height: 1rem;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-
-.downloads-note {
-  margin-top: 0.6rem;
-  font-size: var(--fs-tiny);
-  color: var(--muted);
-  font-style: italic;
-}
-
-.downloads-note code {
-  font-family: monospace;
-  font-size: 0.75em;
-  background: var(--chip-bg);
-  padding: 0.05rem 0.25rem;
-  border-radius: 3px;
-}
 
 /* ── Misc ────────────────────────────────────────────────────────────────────── */
 
@@ -657,6 +527,5 @@ html.dark .icon-moon { display: none; }
   .container     { padding: 0 0.75rem 0.75rem; }
   header h1      { font-size: 1.35rem; }
   .result-item .desc { white-space: normal; }
-  /* Fixed bg doesn't work on iOS — fall back to scroll */
   body { background-attachment: scroll; }
 }

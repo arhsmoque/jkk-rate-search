@@ -1,31 +1,9 @@
 /**
- * JKK Rate Search — PWA
- * Core / Port / Adapter / App structure per AODP
+ * Air Selangor Specs Search — PWA
+ * Searchable index of SYABAS Standard Specifications & SPAN Uniform Technical Guidelines
  */
 
-// ── Core: invariant domain logic ──────────────────────────────────────────────
-
-function format_search_result_row(row) {
-  return {
-    id:             row.id,
-    item_no:        row.item_no        || "—",
-    description:    row.description    || "",
-    unit:           row.unit           || "",
-    doc_type:       row.doc_type       || "",
-    edition_year:   row.edition_year   || 0,
-    source_page:    row.source_page    || 0,
-    rate_count:     row.rate_count     || 0,
-    variant_labels: row.variant_labels || "",
-  };
-}
-
 // ── Core: fuzzy fallback (typo tolerance) ─────────────────────────────────────
-//
-// FTS5 only does prefix matching, so a typo like "konkret" (for "konkrit") or
-// "scafold" (for "scaffold") returns zero rows. When the exact/prefix search
-// finds nothing, we fall back to an in-memory fuzzy scan over all items using
-// bounded Levenshtein distance. The dataset is small (~2.4k items) so this runs
-// well under a frame even on mobile, and only triggers on an exact-miss.
 
 function levenshtein(a, b, max = Infinity) {
   if (a === b) return 0;
@@ -128,14 +106,25 @@ function prefix_search(items, rawQuery, limit = 20) {
   return scored.slice(0, limit).map((s) => format_search_result_row(s.item));
 }
 
+function format_search_result_row(row) {
+  return {
+    id:             row.id,
+    item_no:        row.item_no        || "—",
+    description:    row.description    || "",
+    unit:           row.unit           || "",
+    doc_type:       row.doc_type       || "",
+    edition_year:   row.edition_year   || 0,
+    source_page:    row.source_page    || 0,
+    section:        row.section        || "",
+    remarks:        row.remarks        || "",
+  };
+}
+
 function load_all_items(db) {
   const sql = `
-    SELECT i.id, i.item_no, i.description, i.unit, i.doc_type,
-           i.edition_year, i.source_page, COUNT(r.id) AS rate_count,
-           GROUP_CONCAT(r.variant_label, '|') AS variant_labels
-    FROM jkk_items i
-    LEFT JOIN jkk_rates r ON r.item_id = i.id
-    GROUP BY i.id
+    SELECT id, item_no, description, unit, doc_type,
+           edition_year, source_page, section, remarks
+    FROM spec_items
   `;
   const res = db.exec(sql);
   if (!res.length) return [];
@@ -151,17 +140,17 @@ function load_all_items(db) {
       doc_type:       v[idx.doc_type]       || "",
       edition_year:   v[idx.edition_year]   || 0,
       source_page:    v[idx.source_page]    || 0,
-      rate_count:     v[idx.rate_count]     || 0,
-      variant_labels: v[idx.variant_labels] || "",
+      section:        v[idx.section]        || "",
+      remarks:        v[idx.remarks]        || "",
     };
     row._tokens = fuzzy_tokenize(
-      `${row.item_no} ${row.description} ${row.unit} ${row.variant_labels.replace(/\|/g, " ")}`
+      `${row.item_no} ${row.description} ${row.unit} ${row.section} ${row.remarks}`
     );
     return row;
   });
 }
 
-// ── Ports: stable interface contracts ─────────────────────────────────────────
+// ── Ports ─────────────────────────────────────────────────────────────────────
 
 const SearchPort = {
   search(items, query, limit = 20) {
@@ -169,21 +158,12 @@ const SearchPort = {
   },
 
   async get_item_detail(db, item_id) {
-    const item_stmt = db.prepare("SELECT * FROM jkk_items WHERE id = ?");
-    item_stmt.bind([String(item_id)]);
+    const stmt = db.prepare("SELECT * FROM spec_items WHERE id = ?");
+    stmt.bind([String(item_id)]);
     let item = null;
-    if (item_stmt.step()) item = item_stmt.getAsObject();
-    item_stmt.free();
-
-    const rates_stmt = db.prepare(
-      "SELECT variant_label, variant_type, rate_rm FROM jkk_rates WHERE item_id = ? ORDER BY id"
-    );
-    rates_stmt.bind([String(item_id)]);
-    const rates = [];
-    while (rates_stmt.step()) rates.push(rates_stmt.getAsObject());
-    rates_stmt.free();
-
-    return { item, rates };
+    if (stmt.step()) item = stmt.getAsObject();
+    stmt.free();
+    return { item };
   },
 };
 
@@ -192,12 +172,12 @@ const StoragePort = {
   async persist_database(bytes)  { return IndexedDbStorageAdapter.persist_database(bytes); },
 };
 
-// ── Adapters: runtime-specific bindings ───────────────────────────────────────
+// ── Adapters ──────────────────────────────────────────────────────────────────
 
 const IndexedDbStorageAdapter = {
-  DB_NAME:    "jkk-rate-search-db",
+  DB_NAME:    "air-selangor-specs-db",
   STORE_NAME: "db-blobs",
-  KEY:        "jkk-master-v1",
+  KEY:        "air-selangor-specs-v1",
 
   async load_database() {
     return new Promise((resolve, reject) => {
@@ -240,30 +220,18 @@ const SqlJsAdapter = {
   load_database(bytes) { return new this.SQL.Database(bytes); },
 };
 
-// ── App: CONFIG — script-patchable via scripts/patch-config.ps1 ───────────────
+// ── App: CONFIG ───────────────────────────────────────────────────────────────
 
 const CONFIG = {
   SEARCH_LIMIT:       20,
   FUZZY_MIN_SIM:      0.6,
   SEARCH_DEBOUNCE_MS: 150,
   LOCALE:             "en-MY",
-  DOC_LABELS:         { civil: "Civil", electrical: "Electrical", pukal: "Pukal" },
-  DB_PATH:            "assets/jkk-master.db",
-}; // END CONFIG
+  DOC_LABELS:         { syabas: "SYABAS 2007", span: "SPAN UTG 2018" },
+  DB_PATH:            "assets/air-selangor-specs.db",
+};
 
-// ── App: RATE_TABLE_COLS — script-patchable via scripts/patch-columns.ps1 ─────
-//
-// Add, remove, or reorder columns here. Each entry drives both <th> and <td>.
-// type: "text" | "badge" | "currency"
-// The column with type "currency" gets the unit appended to its header label.
-
-const RATE_TABLE_COLS = [
-  { key: "variant_label", label: "Varian", align: "left",  type: "text"     },
-  { key: "variant_type",  label: "Jenis",  align: "left",  type: "badge"    },
-  { key: "rate_rm",       label: "Kadar",  align: "right", type: "currency" },
-]; // END RATE_TABLE_COLS
-
-// ── App: utilities ─────────────────────────────────────────────────────────────
+// ── App: utilities ────────────────────────────────────────────────────────────
 
 function escape_html(str) {
   if (str === null || str === undefined) return "";
@@ -274,26 +242,33 @@ function escape_html(str) {
     .replace(/"/g, "&quot;");
 }
 
-function format_currency(value) {
-  if (value === null || value === undefined) return "—";
-  return "RM " + Number(value).toLocaleString(CONFIG.LOCALE, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 function doc_label(doc_type, year) {
   const name = CONFIG.DOC_LABELS[doc_type] || doc_type;
-  return year ? `${name} ${year}` : name;
+  return year ? `${name}` : name;
 }
 
-// ── App: DOM refs & status ─────────────────────────────────────────────────────
+function format_remarks(text) {
+  if (!text) return "<p class=\"no-rates\">Tiada teks tambahan.</p>";
+  // Preserve line breaks, but wrap in paragraphs for readability
+  const paragraphs = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => `<p>${escape_html(line)}</p>`)
+    .join("");
+  return paragraphs || "<p class=\"no-rates\">Tiada teks tambahan.</p>";
+}
+
+// ── App: DOM refs & status ────────────────────────────────────────────────────
 
 const els = {
   searchInput: document.getElementById("search-input"),
   resultsList: document.getElementById("results-list"),
   statusBar:   document.getElementById("status-bar"),
   statusText:  document.getElementById("status-text"),
+  filterAll:   document.getElementById("filter-all"),
+  filterSyabas:document.getElementById("filter-syabas"),
+  filterSpan:  document.getElementById("filter-span"),
 };
 
 function set_status(msg, loading = false) {
@@ -305,13 +280,11 @@ function set_status(msg, loading = false) {
 
 let sqlDb = null;
 let allItems = [];
+let filteredItems = [];
+let activeDocFilter = "all";
 let searchDebounceTimer = null;
 
 // ── App: ResultsUI ─────────────────────────────────────────────────────────────
-//
-// Single owner of all result-list and inline-detail state.
-// Nothing outside this object reads or writes _activeId / _activeDetailEl.
-// Callers use: ResultsUI.render(results), ResultsUI.open(id, li), ResultsUI.close()
 
 const ResultsUI = {
   _activeId:       null,
@@ -335,7 +308,7 @@ const ResultsUI = {
 
     if (!results.length) {
       els.resultsList.innerHTML =
-        `<li class="empty-state">Tiada item dijumpai. Cuba kata kunci lain.</li>`;
+        `<li class="empty-state">Tiada klausa dijumpai. Cuba kata kunci lain.</li>`;
       return;
     }
 
@@ -346,25 +319,15 @@ const ResultsUI = {
       li.setAttribute("tabindex", "0");
       li.dataset.id = r.id;
 
-      const rateLabel = r.rate_count > 1 ? `${r.rate_count} kadar`
-                      : r.rate_count === 1 ? "1 kadar" : "";
-      const variantPills = r.variant_labels
-        ? r.variant_labels.split("|").filter(Boolean)
-        : [];
+      const pageLabel = r.source_page ? `Ms ${r.source_page}` : "";
 
       li.innerHTML = `
         <div class="row-top">
           <span class="code">${escape_html(r.item_no)}</span>
           <span class="desc">${escape_html(r.description)}</span>
         </div>
-        ${variantPills.length
-          ? `<div class="variant-pills">${
-              variantPills.map(v => `<span class="vpill">${escape_html(v)}</span>`).join("")
-            }</div>`
-          : ""}
         <div class="meta">
-          ${r.unit     ? `<span>${escape_html(r.unit)}</span>`                         : ""}
-          ${rateLabel  ? `<span>• ${rateLabel}</span>`                                 : ""}
+          ${pageLabel ? `<span>${pageLabel}</span>` : ""}
           <span class="badge">${escape_html(doc_label(r.doc_type, r.edition_year))}</span>
         </div>
       `;
@@ -379,15 +342,15 @@ const ResultsUI = {
 
   async open(item_id, targetLi) {
     if (!sqlDb) return;
-    if (this._activeId === item_id) { this.close(); return; }  // toggle
+    if (this._activeId === item_id) { this.close(); return; }
     this.close();
     this._activeId = item_id;
     targetLi.classList.add("active");
     set_status("Memuatkan…", true);
     try {
-      const { item, rates } = await SearchPort.get_item_detail(sqlDb, item_id);
+      const { item } = await SearchPort.get_item_detail(sqlDb, item_id);
       if (!item) { set_status("Item tidak dijumpai."); return; }
-      this._render_detail(item, rates, targetLi);
+      this._render_detail(item, targetLi);
       set_status("Siap.");
     } catch (e) {
       console.error("Detail error:", e);
@@ -395,47 +358,10 @@ const ResultsUI = {
     }
   },
 
-  _render_detail(item, rates, targetLi) {
-    const unitLabel = item.unit ? escape_html(item.unit) : "";
-
-    // Build table header from RATE_TABLE_COLS
-    const thead = RATE_TABLE_COLS.map(col => {
-      const label = (col.type === "currency" && unitLabel)
-        ? `${col.label} (RM / ${unitLabel})`
-        : col.label;
-      return `<th style="text-align:${col.align}">${label}</th>`;
-    }).join("");
-
-    // Build table rows from RATE_TABLE_COLS
-    const tbody = rates.map(r => {
-      const cells = RATE_TABLE_COLS.map(col => {
-        let val;
-        if (col.type === "currency") {
-          val = format_currency(r[col.key]);
-        } else if (col.type === "badge") {
-          val = r[col.key]
-            ? `<span class="variant-type-badge">${escape_html(r[col.key])}</span>`
-            : `<span class="muted-dash">—</span>`;
-        } else {
-          val = escape_html(r[col.key]);
-        }
-        return `<td style="text-align:${col.align}">${val}</td>`;
-      }).join("");
-      return `<tr>${cells}</tr>`;
-    }).join("");
-
-    const ratesHtml = rates.length
-      ? `<table class="rates-table">
-           <thead><tr>${thead}</tr></thead>
-           <tbody>${tbody}</tbody>
-         </table>`
-      : `<p class="no-rates">Tiada data kadar.</p>`;
-
+  _render_detail(item, targetLi) {
+    const pageLabel = item.source_page ? `Muka surat ${item.source_page}` : "";
     const sectionHtml = item.section
       ? `<div class="detail-section">${escape_html(item.section)}</div>` : "";
-    const remarksHtml = item.remarks
-      ? `<div class="detail-remarks"><strong>Nota:</strong> ${escape_html(item.remarks)}</div>`
-      : "";
 
     const detailEl = document.createElement("li");
     detailEl.className = "detail-inline";
@@ -445,16 +371,17 @@ const ResultsUI = {
           <div class="detail-code">${escape_html(item.item_no || "—")}</div>
           <div class="detail-meta">
             ${escape_html(doc_label(item.doc_type, item.edition_year))}
-            ${item.source_page ? `• Muka surat ${item.source_page}` : ""}
-            ${unitLabel        ? `• Unit: ${unitLabel}`             : ""}
+            ${pageLabel ? `• ${pageLabel}` : ""}
           </div>
         </div>
         <button class="close-btn" aria-label="Tutup butiran">&times;</button>
       </div>
       ${sectionHtml}
       <div class="detail-desc">${escape_html(item.description)}</div>
-      ${remarksHtml}
-      ${ratesHtml}
+      <div class="detail-remarks">
+        <div class="remarks-label">Teks Penuh</div>
+        <div class="remarks-body">${format_remarks(item.remarks)}</div>
+      </div>
     `;
 
     targetLi.insertAdjacentElement("afterend", detailEl);
@@ -477,7 +404,7 @@ async function init_database() {
   }
 
   if (!bytes) {
-    set_status("Downloading database (≈1 MB)…", true);
+    set_status("Downloading database…", true);
     const resp = await fetch(CONFIG.DB_PATH);
     if (!resp.ok) throw new Error("Failed to fetch database: " + resp.status);
     bytes = new Uint8Array(await resp.arrayBuffer());
@@ -492,10 +419,32 @@ async function init_database() {
   await SqlJsAdapter.init();
   sqlDb    = SqlJsAdapter.load_database(bytes);
   allItems = load_all_items(sqlDb);
-  set_status(`Ready — ${allItems.length.toLocaleString()} items indexed.`);
+  filteredItems = allItems;
+  set_status(`Ready — ${allItems.length.toLocaleString()} clauses indexed.`);
 }
 
-// ── App: search orchestration ──────────────────────────────────────────────────
+// ── App: filter & search ───────────────────────────────────────────────────────
+
+function apply_doc_filter(filter) {
+  activeDocFilter = filter;
+  [els.filterAll, els.filterSyabas, els.filterSpan].forEach((btn) => {
+    if (btn) btn.classList.toggle("active", btn.dataset.filter === filter);
+  });
+
+  if (filter === "all") {
+    filteredItems = allItems;
+  } else {
+    filteredItems = allItems.filter((it) => it.doc_type === filter);
+  }
+
+  const query = els.searchInput.value.trim();
+  if (query) {
+    do_search(query);
+  } else {
+    ResultsUI.close();
+    els.resultsList.innerHTML = "";
+  }
+}
 
 async function do_search(query) {
   if (!sqlDb) return;
@@ -507,15 +456,14 @@ async function do_search(query) {
 
   set_status("Searching…", true);
   try {
-    const results = SearchPort.search(allItems, query, CONFIG.SEARCH_LIMIT);
+    const results = SearchPort.search(filteredItems, query, CONFIG.SEARCH_LIMIT);
     if (results.length > 0) {
       ResultsUI.render(results);
       set_status(`${results.length} keputusan untuk "${query}"`);
       return;
     }
 
-    // No exact/prefix hit — fall back to typo-tolerant fuzzy matching.
-    const fuzzy = fuzzy_search(allItems, query, CONFIG.SEARCH_LIMIT, CONFIG.FUZZY_MIN_SIM);
+    const fuzzy = fuzzy_search(filteredItems, query, CONFIG.SEARCH_LIMIT, CONFIG.FUZZY_MIN_SIM);
     ResultsUI.render(fuzzy);
     set_status(fuzzy.length
       ? `Padanan terdekat — ${fuzzy.length} untuk "${query}"`
@@ -538,7 +486,6 @@ function init_event_listeners() {
     );
   });
 
-  // "/" focuses search from anywhere
   document.addEventListener("keydown", (e) => {
     if (e.key === "/" && document.activeElement !== els.searchInput) {
       e.preventDefault();
@@ -546,15 +493,19 @@ function init_event_listeners() {
     }
   });
 
-  // Dark mode toggle
   const darkToggle = document.getElementById("dark-toggle");
   if (darkToggle) {
     darkToggle.addEventListener("click", () => {
       const dark = !document.documentElement.classList.contains("dark");
       document.documentElement.classList.toggle("dark", dark);
-      localStorage.setItem("jkk-dark", dark ? "1" : "0");
+      localStorage.setItem("air-selangor-dark", dark ? "1" : "0");
     });
   }
+
+  [els.filterAll, els.filterSyabas, els.filterSpan].forEach((btn) => {
+    if (!btn) return;
+    btn.addEventListener("click", () => apply_doc_filter(btn.dataset.filter));
+  });
 }
 
 async function init_app() {
