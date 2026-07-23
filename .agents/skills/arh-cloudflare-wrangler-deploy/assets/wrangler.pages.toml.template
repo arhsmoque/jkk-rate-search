@@ -1,0 +1,7 @@
+# Cloudflare Pages project config for <UNIT_NAME>.
+# Lives at the unit's own root once more than one deployable unit exists in this repo; a single
+# root-level wrangler.toml is only acceptable while the repo has exactly one deployable unit.
+
+name = "<CLOUDFLARE_PROJECT_NAME>"
+compatibility_date = "<YYYY-MM-DD>"
+pages_build_output_dir = "<BUILD_OUTPUT_DIR>"

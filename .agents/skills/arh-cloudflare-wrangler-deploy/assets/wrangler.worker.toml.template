@@ -1,0 +1,19 @@
+# Cloudflare Worker config for <UNIT_NAME>.
+# Lives next to the Worker's own source (e.g. apps/<UNIT_NAME>/wrangler.toml), never shared with
+# another deployable unit.
+
+name = "<CLOUDFLARE_WORKER_NAME>"
+main = "<ENTRY_FILE>" # e.g. src/index.mjs -- the Worker's fetch/scheduled export
+compatibility_date = "<YYYY-MM-DD>"
+
+# Runtime secrets (API keys, service-role keys) are set once via:
+#   npx wrangler secret put <SECRET_NAME> --config <this-file>
+# using CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID from a CI step or an operator's own token --
+# never committed here, and never passed as a plain [vars] entry if it is sensitive.
+# Non-secret config can go under [vars]:
+# [vars]
+# APP_BASE_URL = "https://example.com"
+
+# Uncomment for a scheduled Worker (replaces or supplements HTTP fetch triggers):
+# [triggers]
+# crons = ["*/15 * * * *"]
